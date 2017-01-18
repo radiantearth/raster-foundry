@@ -20,7 +20,7 @@ class Database(jdbcUrl: String, dbUser: String, dbPassword: String) {
   hikariConfig.setJdbcUrl(jdbcUrl)
   hikariConfig.setUsername(dbUser)
   hikariConfig.setPassword(dbPassword)
-  hikariConfig.setConnectionTimeout(2000)
+  // hikariConfig.setConnectionTimeout(2000)
 
   private val dataSource = new HikariDataSource(hikariConfig)
 
@@ -34,7 +34,7 @@ class Database(jdbcUrl: String, dbUser: String, dbPassword: String) {
   import driver.api._
 
   val db = {
-    val executor = AsyncExecutor("slick", numThreads=64, queueSize=1000)
+    val executor = AsyncExecutor("slick", numThreads=10, queueSize=1000)
     driver.api.Database.forDataSource(dataSource, executor)
   }
 }

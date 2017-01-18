@@ -25,6 +25,7 @@ lazy val commonSettings = Seq(
   ),
   resolvers += Resolver.sonatypeRepo("snapshots"),
   resolvers += Resolver.bintrayRepo("lonelyplanet", "maven"),
+  resolvers += Resolver.bintrayRepo("kwark", "maven"),
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
 
