@@ -107,7 +107,9 @@ export default class ProjectsColorAdjustController {
         if (correction) {
             this.correction = Object.assign({}, this.correction, correction);
 
-            this.gammaLinkToggle = this.correction.gamma.enabled === this.correction.redGamma &&
+            this.gammaLinkToggle =
+                this.correction.gamma.enabled &&
+                this.correction.redGamma === this.correction.blueGamma &&
                 this.correction.blueGamma === this.correction.greenGamma;
 
             this.$timeout(() => {
@@ -145,8 +147,7 @@ export default class ProjectsColorAdjustController {
         });
     }
 
-    gammaLinkToggled() {
-        this.gammaLinkToggle = !this.gammaLinkToggle;
+    onGammaLinkToggled() {
         if (this.gammaLinkToggle) {
             this.correction.gamma.greenGamma = this.correction.gamma.redGamma;
             this.correction.gamma.blueGamma = this.correction.gamma.redGamma;
