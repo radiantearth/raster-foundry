@@ -7,6 +7,7 @@ node {
       checkout scm
     }
 
+    env.COMPOSE_HTTP_TIMEOUT = '90'
     env.AWS_DEFAULT_REGION = 'us-east-1'
     env.RF_ARTIFACTS_BUCKET = 'rasterfoundry-global-artifacts-us-east-1'
     env.RF_DOCS_BUCKET = 'rasterfoundry-staging-docs-site-us-east-1'
