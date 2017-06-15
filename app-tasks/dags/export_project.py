@@ -48,12 +48,12 @@ def get_cluster_id():
 def start_export(export_id, xcom_client):
     bash_cmd = 'java -cp /opt/raster-foundry/jars/rf-batch.jar com.azavea.rf.batch.Main create_export_def {0}'.format(export_id)
     cmd = subprocess.Popen(bash_cmd, shell=True, stdout=subprocess.PIPE)
-    step_id = ''    
+    step_id = ''
     for line in cmd.stdout:
         logger.info(line.strip())
         if 'StepId:' in line:            
             step_id = line.replace('StepId:', '').strip()
-    
+
     xcom_client.xcom_push(key='export_id', value=export_id)
     logger.info('Launched export creation process, watching for updates...')
     is_success = wait_for_success(step_id, get_cluster_id())
@@ -104,7 +104,7 @@ def wait_for_status_op(*args, **kwargs):
     # Wait until process terminates (without using cmd.wait())
     while cmd.poll() is None:
         time.sleep(0.5)
- 
+
     if cmd.returncode == 0:
         logger.info('Successfully completed export %s', export_id)
         return True
