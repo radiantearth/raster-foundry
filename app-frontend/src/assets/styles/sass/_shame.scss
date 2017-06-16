@@ -1440,3 +1440,22 @@ table.upload-info {
     margin-left: 1rem;
   }
 }
+
+.tabbed-list-header {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid $gray-lightest;
+  li a {
+    display: block;
+    padding: 1rem 3rem;
+    margin-bottom: -1px;
+    font-weight: bold;
+    color: $text-base;
+    &.active {
+      color: $brand-primary;
+      border-bottom: 2px solid $brand-primary;
+    }
+  }
+}
