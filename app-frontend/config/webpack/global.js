@@ -8,7 +8,6 @@
 const path = require('path');
 const webpack = require('webpack');
 const autoprefixer = require('autoprefixer-core');
-const Manifest = require('manifest-revision-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
@@ -211,9 +210,11 @@ module.exports = function (_path) {
                 children: true,
                 minChunks: Infinity
             }),
-            new Manifest(path.join(_path + '/config', 'manifest.json'), {
-                rootAssetPath: rootAssetPath,
-                ignorePaths: ['.DS_Store']
+            new webpack.DefinePlugin({
+                'BUILDCONFIG': {
+                    APP_NAME: '\'RasterFoundry\'',
+                    BASEMAPS: basemaps
+                }
             }),
             new ExtractTextPlugin(
                 'assets/styles/css/[name]' +
@@ -225,12 +226,6 @@ module.exports = function (_path) {
                 template: path.join(_path, 'src', 'tpl-index.html'),
                 heapLoad: DEVELOPMENT ? '2743344218' : '3505855839',
                 development: DEVELOPMENT
-            }),
-            new webpack.DefinePlugin({
-                'BUILDCONFIG': {
-                    APP_NAME: '\'RasterFoundry\'',
-                    BASEMAPS: basemaps
-                }
             })
         ]
     };
