@@ -12,7 +12,7 @@ import geotrellis.raster.histogram.Histogram
 
 import spire.syntax.cfor._
 
-object ColorCorrect {
+object ColorCorrect extends util.TimingLogging {
   import functions.SaturationAdjust._
   import functions.SigmoidalContrast._
   import functions.Approximations
@@ -214,7 +214,12 @@ object ColorCorrect {
       2 -> MaybeClipBounds(params.bandClipping.blueMin, params.bandClipping.blueMax)
     )
 
-    _rgbTile = complexColorCorrect(_rgbTile, params.saturation.saturation)(layerNormalizeArgs, gammas)(params.sigmoidalContrast)(colorCorrectArgs, params.tileClipping)
+
+    _rgbTile = timedCreate("FastColorCorrect", "579::SaturationAdjust.complex start", "579::SaturationAdjust.complex finish") {
+      complexColorCorrect(_rgbTile, params.saturation.saturation)(layerNormalizeArgs, gammas)(params.sigmoidalContrast)(colorCorrectArgs, params.tileClipping)
+    }
+
+    printBuffer("FastColorCorrect")
 
     _rgbTile
   }
@@ -272,3 +277,4 @@ object ColorCorrect {
       }
     }
 }
+
