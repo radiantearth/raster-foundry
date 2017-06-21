@@ -15,7 +15,7 @@ object Approximations {
     * and https://martin.ankerl.com/2007/10/04/optimized-pow-approximation-for-java-and-c-c/
     *
     */
-  @inline def pow(a: Double, b: Double): Double = { // exponentiation by squaring
+  def pow(a: Double, b: Double): Double = { // exponentiation by squaring
     if(a < 1 && java.lang.Double.isInfinite(b)) return 0d
     if(a >= 1 && java.lang.Double.isInfinite(b)) return Double.NaN
     if(java.lang.Double.isNaN(a) || java.lang.Double.isNaN(b)) return Double.NaN
@@ -40,7 +40,7 @@ object Approximations {
     * see http://martin.ankerl.com/2007/02/11/optimized-exponential-functions-for-java/
     *
     */
-  @inline def exp(value: Double): Double = {
+  def exp(value: Double): Double = {
     val tmp = (1512775 * value + (1072693248 - 60801)).toLong
     java.lang.Double.longBitsToDouble(tmp << 32)
   }

@@ -2,6 +2,8 @@ package com.azavea.rf.datamodel
 
 import io.circe.generic.JsonCodec
 
+import com.azavea.rf.datamodel._
+import com.azavea.rf.datamodel.util._
 import com.azavea.rf.datamodel.color._
 
 import geotrellis.raster._
@@ -10,7 +12,7 @@ import geotrellis.raster.histogram.Histogram
 
 import spire.syntax.cfor._
 
-object ColorCorrect extends util.TimingLogging {
+object ColorCorrect {
   import functions.SaturationAdjust._
   import functions.SigmoidalContrast._
   import functions.Approximations
@@ -49,9 +51,6 @@ object ColorCorrect extends util.TimingLogging {
     def colorCorrect(tile: MultibandTile, hist: Seq[Histogram[Double]]): MultibandTile = {
       val (rgbTile, rgbHist) = reorderBands(tile, hist)
       ColorCorrect(rgbTile, rgbHist, this)
-      val result = timedCreate("Params", "52::ColorCorrect start", "52::ColorCorrect finish") { ColorCorrect(rgbTile, rgbHist, this) }
-      printBuffer("Params")
-      result
     }
   }
 
@@ -215,7 +214,9 @@ object ColorCorrect extends util.TimingLogging {
       2 -> MaybeClipBounds(params.bandClipping.blueMin, params.bandClipping.blueMax)
     )
 
-    complexColorCorrect(_rgbTile, params.saturation.saturation)(layerNormalizeArgs, gammas)(params.sigmoidalContrast)(colorCorrectArgs, params.tileClipping)
+    _rgbTile = complexColorCorrect(_rgbTile, params.saturation.saturation)(layerNormalizeArgs, gammas)(params.sigmoidalContrast)(colorCorrectArgs, params.tileClipping)
+
+    _rgbTile
   }
 
 

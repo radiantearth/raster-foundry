@@ -10,7 +10,7 @@ object SigmoidalContrast {
     * @param  intensity  The raw intensity value to be mapped-from
     * @return            The intensity value produced by the sigmoidal contrast transformation
     */
-  @inline def transform(cellType: CellType, alpha: Double, beta: Double)(intensity: Double): Double = {
+  def transform(cellType: CellType, alpha: Double, beta: Double)(intensity: Double): Double = {
     val bits = cellType.bits
 
     val u = cellType match {
