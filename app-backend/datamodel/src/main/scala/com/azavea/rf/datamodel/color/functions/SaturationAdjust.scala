@@ -1,6 +1,7 @@
 package com.azavea.rf.datamodel.color.functions
 
 import geotrellis.raster.{ArrayTile, MultibandTile}
+import org.apache.commons.math3.util.FastMath
 
 import spire.syntax.cfor.cfor
 
@@ -64,7 +65,7 @@ object SaturationAdjust {
   // Reverse the process above
   @inline def HCLumaToRGB(hue: Double, chroma: Double, luma: Double): (Int, Int, Int) = {
     val sextant = hue / 60d
-    val X = chroma * (1 - math.abs((sextant % 2) - 1))
+    val X = chroma * (1 - FastMath.abs((sextant % 2) - 1))
     // Projected color values, i.e., on the flat projection of the RGB cube
     val (rFlat: Double, gFlat: Double, bFlat: Double) = (chroma, sextant) match {
       case (0.0, _) => (0.0, 0.0, 0.0) // Gray (or black / white)
