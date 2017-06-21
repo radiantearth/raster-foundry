@@ -36,7 +36,7 @@ object SaturationAdjust {
   // up the center of the HCL cylinder, then flattening the cube down into a hexagon and then
   // pretending that that hexagon is actually a cylinder.
   // https://en.wikipedia.org/wiki/HSL_and_HSV#Lightness
-  def RGBToHCLuma(rByte: Int, gByte: Int, bByte: Int): (Double, Double, Double) = {
+  @inline def RGBToHCLuma(rByte: Int, gByte: Int, bByte: Int): (Double, Double, Double) = {
     // RGB come in as unsigned Bytes, but the transformation requires Doubles [0,1]
     val (r, g, b) = (rByte / 255d, gByte / 255d, bByte / 255d)
     val colors = List(r, g, b)
@@ -57,12 +57,12 @@ object SaturationAdjust {
     // Perceptually weighted average of "lightness" contribution of sRGB primaries (it's
     // not clear that we're in sRGB here, but that's the default for most images intended for
     // display so it's a good guess in the absence of explicit information).
-    val luma = 0.21*r + 0.72*g + 0.07*b
+    val luma = 0.21 * r + 0.72 * g + 0.07 * b
     (hue, chroma, luma)
   }
 
   // Reverse the process above
-  def HCLumaToRGB(hue: Double, chroma: Double, luma: Double): (Int, Int, Int) = {
+  @inline def HCLumaToRGB(hue: Double, chroma: Double, luma: Double): (Int, Int, Int) = {
     val sextant = hue / 60d
     val X = chroma * (1 - math.abs((sextant % 2) - 1))
     // Projected color values, i.e., on the flat projection of the RGB cube
@@ -85,12 +85,12 @@ object SaturationAdjust {
     (r, g, b)
   }
 
-  def scaleChroma(chroma: Double, scaleFactor: Double): Double = {
+  @inline def scaleChroma(chroma: Double, scaleFactor: Double): Double = {
     // Chroma is a Double in the range [0.0, 1.0]. Scale factor is the same as our other gamma corrections:
     // a Double in the range [0.0, 2.0].
-    val scaled = Approximations.pow(chroma, 1.0 / scaleFactor)
-    if (scaled < 0.0) 0.0
-    else if (scaled > 1.0) 1.0
+    val scaled = Approximations.pow(chroma, 1d / scaleFactor)
+    if (scaled < 0.0) 0d
+    else if (scaled > 1.0) 1d
     else scaled
   }
 
