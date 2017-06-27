@@ -10,6 +10,11 @@
  * example: .btn {padding: 50px;}
  */
 
+// Global
+body {
+  font-weight: 400;
+}
+
 // Buttons
 .btn {
   text-transform: uppercase;
@@ -60,6 +65,7 @@ h5 {
 .navbar nav a {
   text-transform: uppercase;
   color: $text-base;
+  font-weight: 400;
 
   &.active {
     color: $brand-primary;
@@ -72,5 +78,22 @@ h5 {
 
 .primary-navbar {
   background-color: $white;
-  border: solid 1.5px rgba($text-base, 0.3);
+  border-bottom: solid 1.5px rgba($text-base, 0.3);
+}
+
+.navbar .dropdown > a{
+  border: none;
+}
+
+.navbar nav .open .dropdown-toggle {
+  background-color: $white;
+}
+
+.dropdown-menu {
+  background-color: $white;
+  border-radius: 0;
+
+  li a {
+    background-image: none;
+  }
 }
