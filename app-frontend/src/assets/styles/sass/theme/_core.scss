@@ -19,7 +19,7 @@ body {
 .btn {
   text-transform: uppercase;
   letter-spacing: 1px;
-  width: 320px;
+  width: 270px;
   font-size: 1.4rem;
   font-weight: 400;
 
@@ -40,8 +40,14 @@ p a, li a {
 }
 
 // Headings
-.dashboard-header h1.h3 {
-  display: none;
+.dashboard-header {
+  height: auto;
+  min-height: 0;
+
+  h1.h3 {
+    visibility: hidden;
+    height: 0;
+  }
 }
 
 h4 {
