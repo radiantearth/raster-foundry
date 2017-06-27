@@ -1,3 +1,5 @@
+@import url(https://fonts.googleapis.com/css?family=Montserrat:400,700);
+
 /* * * *
  * Screen Sizes
  * Used in tools/_mixins.scss > @mixin respond-to($breakpoint)
@@ -30,8 +32,8 @@ $column-padding: 1rem;
 /* * * *
  * Fonts
  * * * */
-$font-base: 'Open Sans', sans-serif;
-$font-header: 'Titillium Web', sans-serif;
+$font-base: 'Montserrat', sans-serif;
+$font-header: 'Montserrat', sans-serif;
 
 
 /* * * *
