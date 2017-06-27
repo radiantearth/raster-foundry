@@ -1,6 +1,6 @@
-/* 
+/*
  * Raster Foundry theming
- * Be sure to uncomment the theme declarations in 
+ * Be sure to uncomment the theme declarations in
  * styles/sass/app.scss
 
  * To override default variables see theme settings
@@ -9,3 +9,68 @@
  * Use this file to declare overrides to default theme
  * example: .btn {padding: 50px;}
  */
+
+// Buttons
+.btn {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  width: 320px;
+  font-size: 1.4rem;
+  font-weight: 400;
+
+  &.btn-default {
+    color: rgba($text-base, 0.5);
+  }
+}
+
+// Links
+p a, li a {
+  color: $text-base;
+  text-decoration: none;
+  background-image: linear-gradient(to right, rgba($text-base, 0.1) 10%,
+   rgba($text-base, 0.1) 100%);
+  background-position: 0 1.07em;
+  background-repeat: repeat-x;
+  background-size: 10px 2px;
+}
+
+// Headings
+.dashboard-header h1.h3 {
+  display: none;
+}
+
+h4 {
+  font-size: 3.0rem;
+  font-weight: 300;
+}
+
+h5 {
+  color: $brand-primary;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+
+}
+
+// Content
+.panel-body {
+  padding: 0;
+}
+
+// Navbar
+.navbar nav a {
+  text-transform: uppercase;
+  color: $text-base;
+
+  &.active {
+    color: $brand-primary;
+  }
+
+  &:hover {
+    color: $brand-primary;
+  }
+}
+
+.primary-navbar {
+  background-color: $white;
+  border: solid 1.5px rgba($text-base, 0.3);
+}
