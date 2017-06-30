@@ -1,0 +1,28 @@
+.btn {
+  width: 100%;
+  max-width: 23rem;
+  padding: 1.3rem 2rem;
+  font-family: $font-family-1;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 0;
+
+  &.btn-default {
+    color: rgba($text-base, 0.5);
+    background: rgba($brand-secondary, 0.05);
+
+    &:hover {
+      color: $text-base;
+    }
+  }
+
+  &.btn-primary,
+  &.btn-secondary {
+    background-color: $brand-primary;
+
+    &:hover {
+      background-color: $primary-hover;
+    }
+  }
+}
