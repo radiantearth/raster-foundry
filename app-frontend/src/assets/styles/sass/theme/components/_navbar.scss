@@ -1,0 +1,37 @@
+.navbar nav a {
+  text-transform: uppercase;
+  color: $text-base;
+  font-weight: 400;
+
+  &.active {
+    color: $brand-primary;
+  }
+
+  &:hover {
+    color: $brand-primary;
+  }
+}
+
+.navbar .dropdown > a{
+  border: none;
+}
+
+.navbar nav .open .dropdown-toggle {
+  background-color: $white;
+}
+
+.dropdown-menu {
+  background-color: $white;
+  border-radius: 0;
+
+  li a {
+    background-image: none;
+  }
+}
+
+.primary-navbar {
+  padding-top: 1.4rem;
+  padding-bottom: 1.4rem;
+  background-color: $white;
+  border-bottom: solid 0.15rem rgba($text-base, 0.3);
+}
