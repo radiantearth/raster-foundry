@@ -1,0 +1,82 @@
+
+// Global
+body {
+  font-weight: 400;
+}
+
+// Buttons
+.btn {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  width: 270px;
+  font-size: 1.4rem;
+  font-weight: 400;
+
+  &.btn-default {
+    color: rgba($text-base, 0.5);
+  }
+}
+
+// Links
+p a, li a {
+  color: $text-base;
+  text-decoration: none;
+  background-image: linear-gradient(to right, rgba($text-base, 0.1) 10%,
+          rgba($text-base, 0.1) 100%);
+  background-position: 0 1.07em;
+  background-repeat: repeat-x;
+  background-size: 10px 2px;
+}
+
+// Headings
+.dashboard-header {
+  height: auto;
+  min-height: 0;
+
+  h1.h3 {
+    visibility: hidden;
+    height: 0;
+  }
+}
+
+// Content
+.panel-body {
+  padding: 0;
+}
+
+// Navbar
+.navbar nav a {
+  text-transform: uppercase;
+  color: $text-base;
+  font-weight: 400;
+
+  &.active {
+    color: $brand-primary;
+  }
+
+  &:hover {
+    color: $brand-primary;
+  }
+}
+
+.primary-navbar {
+  background-color: $white;
+  border-bottom: solid 1.5px rgba($text-base, 0.3);
+}
+
+.navbar .dropdown > a{
+  border: none;
+}
+
+.navbar nav .open .dropdown-toggle {
+  background-color: $white;
+}
+
+.dropdown-menu {
+  background-color: $white;
+  border-radius: 0;
+
+  li a {
+    background-image: none;
+  }
+}
