@@ -8,12 +8,17 @@
   text-transform: uppercase;
   border: 0;
 
-  &.btn-default {
+  &.btn-default,
+  &.btn-light {
     color: rgba($text-base, 0.5);
     background: rgba($brand-secondary, 0.05);
 
     &:hover {
       color: $text-base;
+    }
+
+    &:focus {
+      box-shadow: none;
     }
   }
 
