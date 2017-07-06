@@ -1,4 +1,5 @@
 $font-family-1: 'ProximaNova';
+$font-family-2: 'radiantIcons';
 
 $font-weight-regular: 400;
 $font-weight-semibold: 600;
@@ -7,26 +8,34 @@ $font-weight-bold: 700;
 @font-face {
   font-family: $font-family-1;
   font-weight: $font-weight-regular;
-  src: url('theme/fonts/ProximaNova-Regular.eot');
-  src: url('theme/fonts/ProximaNova-Regular.eot?#iefix') format('embedded-opentype'),
-  url('theme/fonts/ProximaNova-Regular.woff') format('woff'),
-  url('theme/fonts/ProximaNova-Regular.ttf') format('truetype');
+  src: url('theme/fonts/ProximaNova/ProximaNova-Regular.eot');
+  src: url('theme/fonts/ProximaNova/ProximaNova-Regular.eot?#iefix') format('embedded-opentype'),
+  url('theme/fonts/ProximaNova/ProximaNova-Regular.woff') format('woff'),
+  url('theme/fonts/ProximaNova/ProximaNova-Regular.ttf') format('truetype');
 }
 
 @font-face {
   font-family: $font-family-1;
   font-weight: $font-weight-semibold;
-  src: url('theme/fonts/ProximaNova-Semibold.eot');
-  src: url('theme/fonts/ProximaNova-Semibold.eot?#iefix') format('embedded-opentype'),
-  url('theme/fonts/ProximaNova-Semibold.woff') format('woff'),
-  url('theme/fonts/ProximaNova-Semibold.ttf') format('truetype');
+  src: url('theme/fonts/ProximaNova/ProximaNova-Semibold.eot');
+  src: url('theme/fonts/ProximaNova/ProximaNova-Semibold.eot?#iefix') format('embedded-opentype'),
+  url('theme/fonts/ProximaNova/ProximaNova-Semibold.woff') format('woff'),
+  url('theme/fonts/ProximaNova/ProximaNova-Semibold.ttf') format('truetype');
 }
 
 @font-face {
   font-family: $font-family-1;
   font-weight: $font-weight-bold;
-  src: url('theme/fonts/ProximaNova-Bold.eot');
-  src: url('theme/fonts/ProximaNova-Bold.eot?#iefix') format('embedded-opentype'),
-  url('theme/fonts/ProximaNova-Bold.woff') format('woff'),
-  url('theme/fonts/ProximaNova-Bold.ttf') format('truetype');
+  src: url('theme/fonts/ProximaNova/ProximaNova-Bold.eot');
+  src: url('theme/fonts/ProximaNova/ProximaNova-Bold.eot?#iefix') format('embedded-opentype'),
+  url('theme/fonts/ProximaNova/ProximaNova-Bold.woff') format('woff'),
+  url('theme/fonts/ProximaNova/ProximaNova-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: $font-family-2;
+  src: url('theme/fonts/radiantIcons/radiantIcons.eot');
+  src: url('theme/fonts/radiantIcons/radiantIcons.eot?#iefix') format('embedded-opentype'),
+  url('theme/fonts/radiantIcons/radiantIcons.woff') format('woff'),
+  url('theme/fonts/radiantIcons/radiantIcons.ttf') format('truetype');
 }

@@ -1,0 +1,16 @@
+.icon-home:before,
+.icon-project:before,
+.icon-imports:before,
+.icon-model:before {
+  font-family: $font-family-2 !important;
+}
+
+.icon-check:before { content: '\e800'; }
+.icon-home:before { content: '\e801'; }
+.icon-edit:before { content: '\e802'; }
+.icon-imports:before { content: '\e803'; }
+.icon-more:before { content: '\e804'; }
+.icon-project:before { content: '\e805'; }
+.icon-search:before { content: '\e806'; }
+.icon-settings:before { content: '\e807'; }
+.icon-model:before { content: '\e808'; }

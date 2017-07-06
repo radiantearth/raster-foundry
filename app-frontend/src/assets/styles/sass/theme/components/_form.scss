@@ -1,6 +1,20 @@
 .form-control {
+  border-radius: 0 !important;
+  border-color: transparent !important;
+  border-bottom: 1.5px solid $brand-secondary !important;
+  background-color: transparent !important;
+  font-family: $font-family-1;
+  font-size: 14px;
+  color: $text-base;
+  font-weight: $font-weight-regular;
+  padding: 0;
+  height: 38px;
 
   &:focus {
     box-shadow: none;
+  }
+
+  &.ng-empty:not(:hover) {
+    border-bottom-color: rgba($brand-secondary, 0.3) !important;
   }
 }
