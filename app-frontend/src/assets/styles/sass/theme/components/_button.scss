@@ -16,10 +16,6 @@
     &:hover {
       color: $text-base;
     }
-
-    &:focus {
-      box-shadow: none;
-    }
   }
 
   &.btn-primary,
@@ -29,5 +25,12 @@
     &:hover {
       background-color: $primary-hover;
     }
+  }
+
+  &:active,
+  &.active,
+  &:focus,
+  &.focus {
+    box-shadow: none !important;
   }
 }
