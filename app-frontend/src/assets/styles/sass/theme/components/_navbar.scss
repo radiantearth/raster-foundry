@@ -1,4 +1,5 @@
 .navbar {
+  background-color: $white;
 
   nav {
 
@@ -21,8 +22,35 @@
     }
   }
 
-  .dropdown > a{
-    border: none;
+  .dropdown {
+
+    > a {
+      border: none;
+      border-bottom: 1px solid $brand-secondary;
+      border-radius: 0;
+
+      * {
+        font-family: $font-family-1;
+        font-size: 14px;
+        color: $brand-secondary !important;
+        text-transform: none;
+      }
+    }
+
+    .dropdown-menu {
+      box-shadow: none;
+      background-color: #f1f2f2;
+      top: calc(100% + 2px);
+      padding: 0;
+
+      li {
+        background-color: rgba($brand-secondary, 0.05);
+
+        a {
+          text-transform: none;
+        }
+      }
+    }
   }
 
   .project-title {
