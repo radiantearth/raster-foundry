@@ -35,6 +35,9 @@ p {
 }
 
 .panel[title="Projects & Imports"] {
+  border-bottom: 1px solid rgba($brand-secondary, 0.1);
+  border-radius: 0;
+  margin-bottom: 17px;
 
   .btn {
     width: 100%;
@@ -43,5 +46,19 @@ p {
     &:first-of-type {
       margin-right: 6px;
     }
+  }
+}
+
+.cta-content p:not(.pb-25) {
+  margin-top: 7px;
+  margin-bottom: 14px;
+
+  a {
+    font-family: $font-family-1;
+    font-size: 12px;
+    line-height: 1.25;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba($text-base, 0.5) !important;
   }
 }
