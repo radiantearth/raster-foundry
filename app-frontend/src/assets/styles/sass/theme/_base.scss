@@ -33,3 +33,15 @@ p {
 .aside .aside-footer {
   background-color: transparent;
 }
+
+.panel[title="Projects & Imports"] {
+
+  .btn {
+    width: 100%;
+    max-width: 320px;
+
+    &:first-of-type {
+      margin-right: 6px;
+    }
+  }
+}
