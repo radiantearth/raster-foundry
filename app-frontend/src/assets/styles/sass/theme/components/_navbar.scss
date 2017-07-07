@@ -26,7 +26,7 @@
 
     > a {
       border: none;
-      border-bottom: 1px solid $brand-secondary;
+      border-bottom: 1.5px solid $brand-secondary;
       border-radius: 0;
 
       * {
@@ -42,9 +42,13 @@
       background-color: #f1f2f2;
       top: calc(100% + 2px);
       padding: 0;
+      font-family: $font-family-1;
 
       li {
-        background-color: rgba($brand-secondary, 0.05);
+
+        &:hover {
+          background-color: rgba($brand-secondary, 0.05);
+        }
 
         a {
           text-transform: none;
