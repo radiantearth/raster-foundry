@@ -1,23 +1,33 @@
-.navbar nav a {
-  text-transform: uppercase;
-  color: $text-base;
-  font-weight: 400;
+.navbar {
 
-  &.active {
-    color: $brand-primary;
+  nav {
+
+    a {
+      text-transform: uppercase;
+      color: $text-base;
+      font-weight: 400;
+
+      &.active {
+        color: $brand-primary;
+      }
+
+      &:hover {
+        color: $brand-primary;
+      }
+    }
+
+    .open .dropdown-toggle {
+      background-color: $white;
+    }
   }
 
-  &:hover {
-    color: $brand-primary;
+  .dropdown > a{
+    border: none;
   }
-}
 
-.navbar .dropdown > a{
-  border: none;
-}
-
-.navbar nav .open .dropdown-toggle {
-  background-color: $white;
+  .project-title {
+    color: $text-base;
+  }
 }
 
 .dropdown-menu {
@@ -27,6 +37,10 @@
   li a {
     background-image: none;
   }
+}
+
+.dropdown-project .icon-caret-down {
+  color: $text-base;
 }
 
 .primary-navbar {

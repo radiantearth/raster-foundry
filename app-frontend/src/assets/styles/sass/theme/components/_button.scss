@@ -1,7 +1,5 @@
 .btn {
-  width: 100%;
-  max-width: 23rem;
-  padding: 1.3rem 2rem;
+  padding: 1.3rem 1rem;
   font-family: $font-family-1;
   font-size: 14px;
   letter-spacing: 1px;
@@ -9,9 +7,10 @@
   border: 0;
 
   &.btn-default,
-  &.btn-light {
+  &.btn-light,
+  &.btn-toggle {
     color: rgba($text-base, 0.5);
-    background: rgba($brand-secondary, 0.05);
+    background: rgba($brand-secondary, 0.05) !important;
 
     &:hover {
       color: $text-base;
