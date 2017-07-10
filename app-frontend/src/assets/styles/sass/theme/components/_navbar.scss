@@ -60,6 +60,18 @@
   .project-title {
     color: $text-base;
   }
+
+  &.primary-navbar {
+    padding-top: 1.4rem;
+    padding-bottom: 1.4rem;
+    background-color: $white;
+    border-bottom: solid 0.15rem rgba($text-base, 0.3);
+  }
+
+  &.secondary-navbar {
+    border: 0;
+    border-bottom: 1.5px solid rgba($brand-secondary, 0.3);
+  }
 }
 
 .dropdown-menu {
@@ -75,9 +87,4 @@
   color: $text-base;
 }
 
-.primary-navbar {
-  padding-top: 1.4rem;
-  padding-bottom: 1.4rem;
-  background-color: $white;
-  border-bottom: solid 0.15rem rgba($text-base, 0.3);
-}
+
