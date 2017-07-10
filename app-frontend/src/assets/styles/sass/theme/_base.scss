@@ -62,3 +62,8 @@ p {
     color: rgba($text-base, 0.5) !important;
   }
 }
+
+div.image-placeholder {
+  width: 100% !important;
+  background-color: rgba($shade-light, 0.1);
+}
