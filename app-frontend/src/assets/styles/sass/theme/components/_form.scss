@@ -25,3 +25,21 @@
     border-bottom-color: rgba($brand-secondary, 0.3) !important;
   }
 }
+
+label {
+
+  &.checkbox {
+
+    &:after {
+      border-radius: 100%;
+    }
+
+    &:hover:before {
+      opacity: 1 !important;
+    }
+
+    &:hover:after {
+      border: 1px solid $brand-secondary;
+    }
+  }
+}
