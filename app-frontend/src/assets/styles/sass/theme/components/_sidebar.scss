@@ -1,11 +1,23 @@
 .sidebar {
   border-right: 1.5px solid rgba($brand-secondary, 0.3);
 
+  .sidebar-header {
+    background-color: $white;
+  }
+
   .icon-arrow-left:before {
     color: $brand-primary;
   }
 
   .sidebar-static {
     border-bottom: 1.5px solid rgba($brand-secondary, 0.3);
+  }
+
+  .list-group-item {
+    padding-right: 0;
+
+    .list-group-right .btn:not(:last-child) {
+      margin-right: 2px !important;
+    }
   }
 }
