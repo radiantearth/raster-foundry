@@ -1,7 +1,9 @@
-.form-group {
+.form-group.all-in-one {
 
-  .all-in-one {
-    background-color: transparent;
+  .form-control {
+    position: relative;
+    top: 5px;
+    border-bottom: 0 !important;
   }
 }
 
