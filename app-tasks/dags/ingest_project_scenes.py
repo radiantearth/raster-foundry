@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import random
 import time
 
 from airflow.operators.python_operator import PythonOperator
@@ -27,7 +28,6 @@ ch.setLevel(logging.INFO)
 ch.setFormatter(formatter)
 
 logging.getLogger('rf').addHandler(ch)
-logging.getLogger().addHandler(ch)
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ def wait_for_success(response, cluster_id):
             logger.info('Updating status of %s. Old Status: %s New Status: %s',
                         step_id, current_status, status)
             current_status = status
-        time.sleep(30)
+        time.sleep(45 + random.randint(0, 30))
     is_success = (current_status == 'COMPLETED')
     if is_success:
         logger.info('Successfully completed ingest for %s', step_id)
@@ -225,33 +225,31 @@ def wait_for_status_op(*args, **kwargs):
 
     if scene.ingestStatus != IngestStatus.FAILED:
         logger.info('Writing scene metadata into postgres.')
-        metadataToPostgres(s3_output_location, scene_id)
+        metadata_to_postgres(s3_output_location, scene_id)
 
     logger.info('Setting scene %s ingest status to %s', scene.id, scene.ingestStatus)
     scene.update()
     logger.info('Successfully updated scene %s\'s ingest status', scene.id)
-    
+
     if scene.ingestStatus == IngestStatus.FAILED:
         raise AirflowException('Failed to ingest {} for user {}'.format(scene_id, scene.owner))
 
 @wrap_rollbar
-def metadataToPostgres(uri, scene_id):
-    bash_cmd = 'java -cp /opt/raster-foundry/jars/rf-batch.jar com.azavea.rf.batch.Main migration_s3_postgres {} layer_attributes {}'.format(uri, scene_id)
-    cmd = subprocess.Popen(bash_cmd, shell=True, stdout=subprocess.PIPE)
-    step_id = ''
-    for line in cmd.stdout:
-        logger.info(line.strip())
-
-    # Wait until process terminates (without using cmd.wait())
-    while cmd.poll() is None:
-        time.sleep(0.5)
-
-    if cmd.returncode == 0:
-        logger.info('Successfully completed metadata postgres write for scene %s', scene_id)
-        return True
-    else:
-        logger.error('Something went wrong with %s', scene_id)
-        raise AirflowException('Metadata postgres write failed for {}'.format(scene_id))
+def metadata_to_postgres(uri, scene_id):
+    bash_cmd = [
+        'java',
+        '-cp',
+        '/opt/raster-foundry/jars/rf-batch.jar',
+        'com.azavea.rf.batch.Main',
+        'migration_s3_postgres',
+        uri,
+        'layer_attributes',
+        scene_id
+    ]
+    logger.info('Bash command to store metadata: %s', ' '.join(bash_cmd))
+    cmd = subprocess.check_call(bash_cmd, stdout=subprocess.PIPE)
+    logger.info('Successfully completed metadata postgres write for scene %s', scene_id)
+    return True
 
 ################################
 # Tasks                        #

@@ -58,8 +58,6 @@ object MapAlgebraAST {
   }
 
   /** Operations which should only have one argument. */
-  sealed trait UnaryOperation extends Operation with Serializable
-
   case class Addition(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
   val symbol = "+"
 
@@ -84,6 +82,87 @@ object MapAlgebraAST {
     def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
   }
 
+  case class Max(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "max"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Min(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "min"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Equality(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "=="
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Inequality(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "!="
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Greater(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = ">"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class GreaterOrEqual(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = ">="
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Less(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "<"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class LessOrEqual(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "<="
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class And(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "and"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Or(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "or"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Xor(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "xor"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Pow(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "^"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Atan2(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
+    val symbol = "atan2"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+
+  sealed trait UnaryOperation extends Operation with Serializable
+
   case class Masking(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata], mask: MultiPolygon) extends UnaryOperation {
     val symbol = "mask"
 
@@ -96,14 +175,122 @@ object MapAlgebraAST {
     def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
   }
 
-  case class Max(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
-    val symbol = "max"
+  case class IsDefined(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "isdefined"
 
     def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
   }
 
-  case class Min(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends Operation {
-    val symbol = "min"
+  case class IsUndefined(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "isundefined"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class SquareRoot(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "sqrt"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Log(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "log"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Log10(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "log10"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Round(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "round"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Floor(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "floor"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Ceil(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "ceil"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class NumericNegation(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "neg"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class LogicalNegation(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "not"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Abs(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "abs"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Sin(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "sin"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Cos(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "cos"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Tan(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "tan"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Sinh(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "sinh"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Cosh(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "cosh"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Tanh(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "tanh"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Asin(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "asin"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Acos(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "acos"
+
+    def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
+  }
+
+  case class Atan(args: List[MapAlgebraAST], id: UUID, metadata: Option[NodeMetadata]) extends UnaryOperation {
+    val symbol = "atan"
 
     def withArgs(newArgs: List[MapAlgebraAST]): MapAlgebraAST = copy(args = newArgs)
   }

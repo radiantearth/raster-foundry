@@ -23,6 +23,7 @@
     "test-watch": "karma start karma.conf.js --auto-watch --no-single-run"
   },
   "dependencies": {
+    "angucomplete-alt": "^3.0.0",
     "angular": "~1.5.8",
     "angular-animate": "~1.5.8",
     "angular-aria": "~1.5.8",
@@ -51,6 +52,7 @@
     "jquery": "~2.1.4",
     "leaflet": "1.0.3",
     "leaflet-draw": "~0.4.9",
+    "leaflet-draw-drag": "~0.4.4",
     "lodash": "~4.5.0",
     "mathjs": "^3.14.2",
     "moment": "^2.18.1",

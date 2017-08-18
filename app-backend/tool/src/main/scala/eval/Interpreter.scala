@@ -83,21 +83,26 @@ object Interpreter extends LazyLogging {
   /** Interpret an AST with its matched execution parameters, but do so
     * without fetching any Rasters. Only interprets the structural validatity of
     * the AST, given the params.
+    *
+    * @param validReferences A boolean flag for determining whether `ToolReference` nodes are valid
     */
   def interpretPure[M: Monoid](
     ast: MapAlgebraAST,
-    sourceMapping: Map[UUID, RFMLRaster]
+    sourceMapping: Map[UUID, RFMLRaster],
+    validReferences: Boolean
   ): Interpreted[M] = ast match {
     /* Validate leaf nodes */
     case Source(id, _) if sourceMapping.isDefinedAt(id) => Valid(Monoid.empty)
     case Source(id, _) => Invalid(NonEmptyList.of(MissingParameter(id)))
     case Constant(_, _, _) => Valid(Monoid.empty)
-    case ToolReference(id, _) => Invalid(NonEmptyList.of(UnsubstitutedRef(id)))
+    case ToolReference(id, _) =>
+      if (!validReferences) Invalid(NonEmptyList.of(UnsubstitutedRef(id)))
+      else Valid(Monoid.empty)
 
     /* Unary operations must have only one arguments */
     case op: UnaryOperation => {
       /* Check for errors further down, first */
-      val kids: Interpreted[M] = op.args.foldMap(a => interpretPure(a, sourceMapping))
+      val kids: Interpreted[M] = op.args.foldMap(a => interpretPure(a, sourceMapping, validReferences))
 
       /* Unary ops must only have one argument */
       val argLen: Interpreted[M] = if (op.args.length == 1) Valid(Monoid.empty) else {
@@ -110,7 +115,7 @@ object Interpreter extends LazyLogging {
 
     /* All binary operations must have at least 2 arguments */
     case op: Operation => {
-      val kids: Interpreted[M] = op.args.foldMap(a => interpretPure(a, sourceMapping))
+      val kids: Interpreted[M] = op.args.foldMap(a => interpretPure(a, sourceMapping, validReferences))
 
       val argLen: Interpreted[M] = if (op.args.length > 1) Valid(Monoid.empty) else {
         Invalid(NonEmptyList.of(IncorrectArgCount(op.id, 2, op.args.length)))
@@ -167,6 +172,101 @@ object Interpreter extends LazyLogging {
       case Masking(args, id, _, mask) =>
         logger.debug(s"case masking at $id")
         eval(tiles, args.head).mask(extent, mask)
+      case Equality(args, id, _) =>
+        logger.debug(s"case equality at $id")
+        args.map(eval(tiles, _)).reduce(_ == _)
+      case Inequality(args, id, _) =>
+        logger.debug(s"case inequality at $id")
+        args.map(eval(tiles, _)).reduce(_ != _)
+      case Greater(args, id, _) =>
+        logger.debug(s"case greaterThan at $id")
+        args.map(eval(tiles, _)).reduce(_ > _)
+      case GreaterOrEqual(args, id, _) =>
+        logger.debug(s"case greaterThanOrEqualTo at $id")
+        args.map(eval(tiles, _)).reduce(_ >= _)
+      case Less(args, id, _) =>
+        logger.debug(s"case lessThan at $id")
+        args.map(eval(tiles, _)).reduce(_ < _)
+      case LessOrEqual(args, id, _) =>
+        logger.debug(s"case lessThanOrEqualTo at $id")
+        args.map(eval(tiles, _)).reduce(_ <= _)
+      case And(args, id, _) =>
+        logger.debug(s"case intersection/and at $id")
+        args.map(eval(tiles, _)).reduce(_ and _)
+      case Or(args, id, _) =>
+        logger.debug(s"case union/or at $id")
+        args.map(eval(tiles, _)).reduce(_ or _)
+      case Xor(args, id, _) =>
+        logger.debug(s"case xor at $id")
+        args.map(eval(tiles, _)).reduce(_ xor _)
+      case Pow(args, id, _) =>
+        logger.debug(s"case pow at $id")
+        args.map(eval(tiles, _)).reduce(_ ** _)
+      case Atan2(args, id, _) =>
+        logger.debug(s"case atan2 at $id")
+        args.map(eval(tiles, _)).reduce(_ atan2 _)
+
+      /* --- Unary Operations --- */
+      case IsDefined(args, id, _) =>
+        logger.debug(s"case defined at $id")
+        eval(tiles, args.head).defined
+      case IsUndefined(args, id, _) =>
+        logger.debug(s"case undefined at $id")
+        eval(tiles, args.head).undefined
+      case SquareRoot(args, id, _) =>
+        logger.debug(s"case sqrt at $id")
+        eval(tiles, args.head).sqrt
+      case Log(args, id, _) =>
+        logger.debug(s"case log at $id")
+        eval(tiles, args.head).log
+      case Log10(args, id, _) =>
+        logger.debug(s"case log10 at $id")
+        eval(tiles, args.head).log10
+      case Round(args, id, _) =>
+        logger.debug(s"case round at $id")
+        eval(tiles, args.head).round
+      case Floor(args, id, _) =>
+        logger.debug(s"case floor at $id")
+        eval(tiles, args.head).floor
+      case Ceil(args, id, _) =>
+        logger.debug(s"case ceil at $id")
+        eval(tiles, args.head).ceil
+      case NumericNegation(args, id, _) =>
+        logger.debug(s"case numeric negation at $id")
+        eval(tiles, args.head).inverse
+      case LogicalNegation(args, id, _) =>
+        logger.debug(s"case logical negation at $id")
+        eval(tiles, args.head).not
+      case Abs(args, id, _) =>
+        logger.debug(s"case abs at $id")
+        eval(tiles, args.head).abs
+      case Sin(args, id, _) =>
+        logger.debug(s"case sin at $id")
+        eval(tiles, args.head).sin
+      case Cos(args, id, _) =>
+        logger.debug(s"case cos at $id")
+        eval(tiles, args.head).cos
+      case Tan(args, id, _) =>
+        logger.debug(s"case tan at $id")
+        eval(tiles, args.head).tan
+      case Sinh(args, id, _) =>
+        logger.debug(s"case sinh at $id")
+        eval(tiles, args.head).sinh
+      case Cosh(args, id, _) =>
+        logger.debug(s"case cosh at $id")
+        eval(tiles, args.head).cosh
+      case Tanh(args, id, _) =>
+        logger.debug(s"case tanh at $id")
+        eval(tiles, args.head).tanh
+      case Asin(args, id, _) =>
+        logger.debug(s"case asin at $id")
+        eval(tiles, args.head).asin
+      case Acos(args, id, _) =>
+        logger.debug(s"case acos at $id")
+        eval(tiles, args.head).acos
+      case Atan(args, id, _) =>
+        logger.debug(s"case atan at $id")
+        eval(tiles, args.head).atan
 
       /* --- FOCAL OPERATIONS --- */
       case FocalMax(args, id, _, neighborhood) =>
@@ -193,7 +293,7 @@ object Interpreter extends LazyLogging {
 
     }
 
-    val pure: Interpreted[Unit] = interpretPure[Unit](ast, sourceMapping)
+    val pure: Interpreted[Unit] = interpretPure[Unit](ast, sourceMapping, false)
     val overridden: Interpreted[MapAlgebraAST] = overrideParams(ast, overrides)
 
     val bufferedSources = ast.bufferedSources()
@@ -262,6 +362,101 @@ object Interpreter extends LazyLogging {
           eval(tiles, args.head, buffer).classify(breaks.toBreakMap)
         case Masking(args, id, _, mask) =>
           eval(tiles, args.head, buffer).mask(extent, mask)
+        case Equality(args, id, _) =>
+          logger.debug(s"case equality at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ == _)
+        case Inequality(args, id, _) =>
+          logger.debug(s"case inequality at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ != _)
+        case Greater(args, id, _) =>
+          logger.debug(s"case greaterThan at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ > _)
+        case GreaterOrEqual(args, id, _) =>
+          logger.debug(s"case greaterThanOrEqualTo at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ >= _)
+        case Less(args, id, _) =>
+          logger.debug(s"case lessThan at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ < _)
+        case LessOrEqual(args, id, _) =>
+          logger.debug(s"case lessThanOrEqualTo at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ <= _)
+        case And(args, id, _) =>
+          logger.debug(s"case intersection/and at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ and _)
+        case Or(args, id, _) =>
+          logger.debug(s"case union/or at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ or _)
+        case Xor(args, id, _) =>
+          logger.debug(s"case xor at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ xor _)
+        case Pow(args, id, _) =>
+          logger.debug(s"case pow at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ ** _)
+        case Atan2(args, id, _) =>
+          logger.debug(s"case atan2 at $id")
+          args.map(eval(tiles, _, buffer)).reduce(_ atan2 _)
+
+        /* --- Unary Operations --- */
+        case IsDefined(args, id, _) =>
+          logger.debug(s"case defined at $id")
+          eval(tiles, args.head, buffer).defined
+        case IsUndefined(args, id, _) =>
+          logger.debug(s"case undefined at $id")
+          eval(tiles, args.head, buffer).undefined
+        case SquareRoot(args, id, _) =>
+          logger.debug(s"case sqrt at $id")
+          eval(tiles, args.head, buffer).sqrt
+        case Log(args, id, _) =>
+          logger.debug(s"case log at $id")
+          eval(tiles, args.head, buffer).log
+        case Log10(args, id, _) =>
+          logger.debug(s"case log10 at $id")
+          eval(tiles, args.head, buffer).log10
+        case Round(args, id, _) =>
+          logger.debug(s"case round at $id")
+          eval(tiles, args.head, buffer).round
+        case Floor(args, id, _) =>
+          logger.debug(s"case floor at $id")
+          eval(tiles, args.head, buffer).floor
+        case Ceil(args, id, _) =>
+          logger.debug(s"case ceil at $id")
+          eval(tiles, args.head, buffer).ceil
+        case NumericNegation(args, id, _) =>
+          logger.debug(s"case numeric negation at $id")
+          eval(tiles, args.head, buffer).inverse
+        case LogicalNegation(args, id, _) =>
+          logger.debug(s"case logical negation at $id")
+          eval(tiles, args.head, buffer).not
+        case Abs(args, id, _) =>
+          logger.debug(s"case abs at $id")
+          eval(tiles, args.head, buffer).abs
+        case Sin(args, id, _) =>
+          logger.debug(s"case sin at $id")
+          eval(tiles, args.head, buffer).sin
+        case Cos(args, id, _) =>
+          logger.debug(s"case cos at $id")
+          eval(tiles, args.head, buffer).cos
+        case Tan(args, id, _) =>
+          logger.debug(s"case tan at $id")
+          eval(tiles, args.head, buffer).tan
+        case Sinh(args, id, _) =>
+          logger.debug(s"case sinh at $id")
+          eval(tiles, args.head, buffer).sinh
+        case Cosh(args, id, _) =>
+          logger.debug(s"case cosh at $id")
+          eval(tiles, args.head, buffer).cosh
+        case Tanh(args, id, _) =>
+          logger.debug(s"case tanh at $id")
+          eval(tiles, args.head, buffer).tanh
+        case Asin(args, id, _) =>
+          logger.debug(s"case asin at $id")
+          eval(tiles, args.head, buffer).asin
+        case Acos(args, id, _) =>
+          logger.debug(s"case acos at $id")
+          eval(tiles, args.head, buffer).acos
+        case Atan(args, id, _) =>
+          logger.debug(s"case atan at $id")
+          eval(tiles, args.head, buffer).atan
 
         /* --- FOCAL OPERATIONS --- */
         case FocalMax(args, id, _, n) =>
@@ -301,7 +496,7 @@ object Interpreter extends LazyLogging {
             .focalStdDev(n, Some(gridbounds))
       }
 
-      val pure: Interpreted[Unit] = interpretPure[Unit](ast, sourceMapping)
+      val pure: Interpreted[Unit] = interpretPure[Unit](ast, sourceMapping, false)
       val overridden: Interpreted[MapAlgebraAST] = overrideParams(ast, overrides)
 
       val bufferedSources = ast.bufferedSources()
