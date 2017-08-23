@@ -1,11 +1,13 @@
 import datetime
 import logging
 import os
+import random
 import time
 
 from airflow.operators.python_operator import PythonOperator
 from airflow.exceptions import AirflowException
 from airflow.models import DAG
+import subprocess
 import boto3
 import dns.resolver
 
@@ -26,7 +28,6 @@ ch.setLevel(logging.INFO)
 ch.setFormatter(formatter)
 
 logging.getLogger('rf').addHandler(ch)
-logging.getLogger().addHandler(ch)
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ dag = DAG(
 batch_job_definition = os.getenv('BATCH_INGEST_JOB_NAME')
 batch_job_queue = os.getenv('BATCH_INGEST_JOB_QUEUE')
 hosted_zone_id = os.getenv('HOSTED_ZONE_ID')
-jar_path = os.getenv('BATCH_JAR_PATH', 'rf-batch-94265f7.jar')
+jar_path = os.getenv('BATCH_JAR_PATH', 'rf-batch-761c316.jar')
 
 
 ################################
@@ -135,7 +136,7 @@ def wait_for_success(response, cluster_id):
             logger.info('Updating status of %s. Old Status: %s New Status: %s',
                         step_id, current_status, status)
             current_status = status
-        time.sleep(30)
+        time.sleep(45 + random.randint(0, 30))
     is_success = (current_status == 'COMPLETED')
     if is_success:
         logger.info('Successfully completed ingest for %s', step_id)
@@ -163,7 +164,7 @@ def create_ingest_definition_op(*args, **kwargs):
     logger.info('Beginning to create ingest definition for scene %s for user %s...',
                 scene_id, scene.owner)
 
-    if scene.ingestStatus != IngestStatus.TOBEINGESTED:
+    if scene.ingestStatus != IngestStatus.TOBEINGESTED and scene.ingestStatus != IngestStatus.FAILED:
         raise Exception('Scene is no longer waiting to be ingested, error error')
 
     scene.ingestStatus = IngestStatus.INGESTING
@@ -222,10 +223,33 @@ def wait_for_status_op(*args, **kwargs):
     scene.ingestLocation = s3_output_location
     scene.ingestStatus = status
 
+    if scene.ingestStatus != IngestStatus.FAILED:
+        logger.info('Writing scene metadata into postgres.')
+        metadata_to_postgres(s3_output_location, scene_id)
+
     logger.info('Setting scene %s ingest status to %s', scene.id, scene.ingestStatus)
     scene.update()
     logger.info('Successfully updated scene %s\'s ingest status', scene.id)
 
+    if scene.ingestStatus == IngestStatus.FAILED:
+        raise AirflowException('Failed to ingest {} for user {}'.format(scene_id, scene.owner))
+
+@wrap_rollbar
+def metadata_to_postgres(uri, scene_id):
+    bash_cmd = [
+        'java',
+        '-cp',
+        '/opt/raster-foundry/jars/rf-batch.jar',
+        'com.azavea.rf.batch.Main',
+        'migration_s3_postgres',
+        uri,
+        'layer_attributes',
+        scene_id
+    ]
+    logger.info('Bash command to store metadata: %s', ' '.join(bash_cmd))
+    cmd = subprocess.check_call(bash_cmd, stdout=subprocess.PIPE)
+    logger.info('Successfully completed metadata postgres write for scene %s', scene_id)
+    return True
 
 ################################
 # Tasks                        #

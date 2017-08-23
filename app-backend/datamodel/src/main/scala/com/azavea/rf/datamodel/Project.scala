@@ -3,6 +3,7 @@ package com.azavea.rf.datamodel
 import java.sql.Timestamp
 import java.util.UUID
 
+import com.azavea.rf.bridge._
 import cats.implicits._
 import cats.syntax.either._
 import geotrellis.slick.Projected
@@ -33,7 +34,9 @@ case class Project(
   aoisLastChecked: Timestamp,
   tags: List[String] = List.empty,
   extent: Option[Projected[Geometry]] = None,
-  manualOrder: Boolean = true
+  manualOrder: Boolean = true,
+  isSingleBand: Boolean = false,
+  singleBandOptions: Option[SingleBandOptions.Params]
 )
 
 /** Case class for project creation */
@@ -65,7 +68,9 @@ object Project extends GeoJsonSupport {
     isAOIProject: Boolean,
     aoiCadenceMillis: Long,
     owner: Option[String],
-    tags: List[String]
+    tags: List[String],
+    isSingleBand: Boolean,
+    singleBandOptions: Option[SingleBandOptions.Params]
   ) extends OwnerCheck {
     def toProject(user: User): Project = {
       val now = new Timestamp((new java.util.Date()).getTime())
@@ -88,7 +93,11 @@ object Project extends GeoJsonSupport {
         isAOIProject,
         aoiCadenceMillis,
         new Timestamp(now.getTime - aoiCadenceMillis),
-        tags
+        tags,
+        None,
+        true,
+        isSingleBand,
+        singleBandOptions
       )
     }
   }
@@ -105,6 +114,8 @@ object Project extends GeoJsonSupport {
         |@| c.downField("aoiCadenceMillis").as[Option[Long]].map(_.getOrElse(DEFAULT_CADENCE))
         |@| c.downField("owner").as[Option[String]]
         |@| c.downField("tags").as[List[String]]
+        |@| c.downField("isSingleBand").as[Option[Boolean]].map(_.getOrElse(false))
+        |@| c.downField("singleBandOptions").as[Option[SingleBandOptions.Params]]
       ).map(Create.apply)
     )
 

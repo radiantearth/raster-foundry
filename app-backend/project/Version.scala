@@ -2,7 +2,7 @@ object Version {
   val rasterFoundry      = "0.1"
   val akka               = "2.4.3"
   val akkaHttp           = "10.0.3"
-  val geotrellis         = "1.1.0-RC3"
+  val geotrellis         = "1.1.1"
   val hikariCP           = "3.1.1.2"
   val postgres           = "9.4-1201-jdbc41"
   val scala              = "2.11.11"
@@ -40,4 +40,6 @@ object Version {
   val dnsJava            = "2.1.8"
   val dropbox            = "2.1.1"
   val scalaCheck         = "1.13.4"
+  val kamon              = "0.6.7"
+  val kamonAkkaHttp      = "0.6.8"
 }

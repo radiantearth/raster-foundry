@@ -4,6 +4,7 @@ import loginTpl from './pages/login/login.html';
 import labTpl from './pages/lab/lab.html';
 import labEditTpl from './pages/lab/edit/edit.html';
 import labRunTpl from './pages/lab/run/run.html';
+import labNavbarTpl from './pages/lab/run/navbar/navbar.html';
 import marketTpl from './pages/market/market.html';
 import marketSearchTpl from './pages/market/search/search.html';
 import marketToolTpl from './pages/market/tool/tool.html';
@@ -17,6 +18,8 @@ import projectsAdvancedColorTpl from './pages/projects/edit/advancedcolor/advanc
 import projectsColorAdjustTpl from './pages/projects/edit/advancedcolor/adjust/adjust.html';
 import projectsListTpl from './pages/projects/list/list.html';
 import projectsDetailTpl from './pages/projects/detail/detail.html';
+import projectsDetailScenesTpl from './pages/projects/detail/scenes/scenes.html';
+import projectsDetailExportsTpl from './pages/projects/detail/exports/exports.html';
 import projectsScenesTpl from './pages/projects/edit/scenes/scenes.html';
 import projectsSceneBrowserTpl from './pages/projects/edit/browse/browse.html';
 import projectOrderScenesTpl from './pages/projects/edit/order/order.html';
@@ -24,8 +27,8 @@ import projectMaskingTpl from './pages/projects/edit/masking/masking.html';
 import projectMaskingDrawTpl from './pages/projects/edit/masking/draw/draw.html';
 import aoiApproveTpl from './pages/projects/edit/aoi-approve/aoi-approve.html';
 import aoiParametersTpl from './pages/projects/edit/aoi-parameters/aoi-parameters.html';
-import drawAoiTpl from './pages/projects/edit/aoi-parameters/draw-aoi/draw-aoi.html';
 import exportTpl from './pages/projects/edit/export/export.html';
+import annotateTpl from './pages/projects/edit/annotate/annotate.html';
 
 import settingsTpl from './pages/settings/settings.html';
 import profileTpl from './pages/settings/profile/profile.html';
@@ -142,16 +145,16 @@ function projectEditStates($stateProvider) {
             controller: 'AOIParametersController',
             controllerAs: '$ctrl'
         })
-        .state('projects.edit.aoi-parameters.draw-aoi', {
-            url: '/draw-aoi',
-            templateUrl: drawAoiTpl,
-            controller: 'DrawAoiController',
-            controllerAs: '$ctrl'
-        })
         .state('projects.edit.export', {
             url: '/export',
             templateUrl: exportTpl,
             controller: 'ExportController',
+            controllerAs: '$ctrl'
+        })
+        .state('projects.edit.annotate', {
+            url: '/annotate',
+            templateUrl: annotateTpl,
+            controller: 'AnnotateController',
             controllerAs: '$ctrl'
         });
 }
@@ -173,10 +176,23 @@ function projectStates($stateProvider) {
             controllerAs: '$ctrl'
         })
         .state('projects.detail', {
-            url: '/detail/:projectid?:page',
+            url: '/detail/:projectid',
             params: {project: null},
             templateUrl: projectsDetailTpl,
             controller: 'ProjectsDetailController',
+            controllerAs: '$ctrl',
+            redirectTo: 'projects.detail.scenes'
+        })
+        .state('projects.detail.scenes', {
+            url: '/scenes?:page',
+            templateUrl: projectsDetailScenesTpl,
+            controller: 'ProjectDetailScenesController',
+            controllerAs: '$ctrl'
+        })
+        .state('projects.detail.exports', {
+            url: '/exports?:page',
+            templateUrl: projectsDetailExportsTpl,
+            controller: 'ProjectDetailExportsController',
             controllerAs: '$ctrl'
         });
 
@@ -270,12 +286,21 @@ function labStates($stateProvider) {
             controller: 'LabEditController',
             controllerAs: '$ctrl'
         })
-        .state('lab.run', {
-            url: '/run/:projectid?',
-            templateUrl: labRunTpl,
-            controller: 'LabRunController',
-            controllerAs: '$ctrl'
-        });
+       .state('lab.run', {
+           url: '/run/:projectid?',
+           views: {
+               'navmenu@root': {
+                   templateUrl: labNavbarTpl,
+                   controller: 'LabNavbarController',
+                   controllerAs: '$ctrl'
+               },
+               '': {
+                   templateUrl: labRunTpl,
+                   controller: 'LabRunController',
+                   controllerAs: '$ctrl'
+               }
+           }
+       });
 }
 
 function shareStates($stateProvider) {

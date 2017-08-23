@@ -3,7 +3,10 @@ package com.azavea.rf.tool.eval
 import com.typesafe.scalalogging.LazyLogging
 import geotrellis.raster._
 import geotrellis.raster.mapalgebra.local._
+import geotrellis.raster.mapalgebra.focal
+import geotrellis.raster.mapalgebra.focal.Neighborhood
 import geotrellis.raster.render._
+import geotrellis.vector.{ Extent, MultiPolygon, Point }
 import spire.syntax.cfor._
 
 sealed trait LazyTile extends TileLike with Grid with LazyLogging {
@@ -12,9 +15,56 @@ sealed trait LazyTile extends TileLike with Grid with LazyLogging {
   def -(other: LazyTile) = this.dualCombine(other)(Subtract.combine)(Subtract.combine)
   def /(other: LazyTile) = this.dualCombine(other)(Divide.combine)(Divide.combine)
   def *(other: LazyTile) = this.dualCombine(other)(Multiply.combine)(Multiply.combine)
+  def **(other: LazyTile) = this.dualCombine(other)(Pow.combine)(Pow.combine)
+
+  def ==(other: LazyTile) = this.dualCombine(other)({(a, b) => if (Equal.compare(a, b)) 1 else 0})({(a, b) => if (Equal.compare(a, b)) 1 else 0})
+  def !=(other: LazyTile) = this.dualCombine(other)({(a, b) => if (Unequal.compare(a, b)) 1 else 0})({(a, b) => if (Unequal.compare(a, b)) 1 else 0})
+  def >(other: LazyTile) = this.dualCombine(other)({(a, b) => if (Greater.compare(a, b)) 1 else 0})({(a, b) => if (Greater.compare(a, b)) 1 else 0})
+  def >=(other: LazyTile) = this.dualCombine(other)({(a, b) => if (GreaterOrEqual.compare(a, b)) 1 else 0})({(a, b) => if (GreaterOrEqual.compare(a, b)) 1 else 0})
+  def <(other: LazyTile) = this.dualCombine(other)({(a, b) => if (Less.compare(a, b)) 1 else 0})({(a, b) => if (Less.compare(a, b)) 1 else 0})
+  def <=(other: LazyTile) = this.dualCombine(other)({(a, b) => if (LessOrEqual.compare(a, b)) 1 else 0})({(a, b) => if (LessOrEqual.compare(a, b)) 1 else 0})
+
+  @SuppressWarnings(Array("ComparingFloatingPointTypes"))
+  def not = this.dualMap({z: Int => if(isNoData(z)) z else if (z == 0) 1 else 0})({z => if(isNoData(z)) z else if (z == 0.0) 1 else 0})
+  def and(other: LazyTile) = this.dualCombine(other)(And.combine)(And.combine)
+  def or(other: LazyTile) = this.dualCombine(other)(Or.combine)(Or.combine)
+  def xor(other: LazyTile) = this.dualCombine(other)(Xor.combine)(Xor.combine)
+
+  def ceil = this.dualMap({z: Int => z})({z => math.ceil(z)})
+  def floor = this.dualMap({z: Int => z})({z => math.floor(z)})
+  def round = this.dualMap({z: Int => z})({z => math.round(z)})
+
+  def defined = this.dualMap({z: Int => if(isNoData(z)) 0 else 1})({ z: Double => if(isNoData(z)) 0 else 1 })
+  def undefined = this.dualMap({z: Int => if(isNoData(z)) 1 else 0})({z: Double => if(isNoData(z)) 1 else 0})
+
+  def sqrt = this.dualMap({z: Int => if(isNoData(z) || z < 0) NODATA else math.sqrt(z).toInt})({z: Double => math.sqrt(z)})
+  def log = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.log(z))})({z: Double => math.log(z)})
+  def log10 = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.log10(z))})({z: Double => math.log10(z)})
+  def abs = this.dualMap({z: Int => if (isNoData(z)) z else math.abs(z)})({z => if (isNoData(z)) z else math.abs(z)})
+  def inverse = this.dualMap({z: Int => if(isNoData(z)) z else -z})({z => if(isNoData(z)) z else -z})
+
+  def sin = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.sin(z))})({z => if(isNoData(z)) z else math.sin(z)})
+  def cos = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.cos(z))})({z => if(isNoData(z)) z else math.cos(z)})
+  def tan = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.tan(z))})({z => if(isNoData(z)) z else math.tan(z)})
+  def asin = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.asin(z))})({z => if(isNoData(z)) z else math.asin(z)})
+  def acos = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.acos(z))})({z => if(isNoData(z)) z else math.acos(z)})
+  def atan = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.atan(z))})({z => if(isNoData(z)) z else math.atan(z)})
+  def sinh = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.sinh(z))})({z => if(isNoData(z)) z else math.sinh(z)})
+  def cosh = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.cosh(z))})({z => if(isNoData(z)) z else math.cosh(z)})
+  def tanh = this.dualMap({z: Int => if(isNoData(z)) z else d2i(math.tanh(z))})({z => if(isNoData(z)) z else math.tanh(z)})
+  def atan2(other: LazyTile) = this.dualCombine(other)({(z1, z2) => d2i(math.atan2(z1, z2))})({(z1, z2) => math.atan2(z1, z2)})
+
   def max(other: LazyTile) = this.dualCombine(other)(Max.combine)(Max.combine)
   def min(other: LazyTile) = this.dualCombine(other)(Min.combine)(Min.combine)
   def classify(breaks: BreakMap[Double, Int]) = this.classification({ i => breaks(i) })
+  def mask(extent: Extent, mask: MultiPolygon) = LazyTile.Masking(this, extent, mask)
+  def focalMax(neighborhood: Neighborhood, gridbounds: Option[GridBounds]) = LazyTile.FocalMax(this, neighborhood, gridbounds)
+  def focalMin(neighborhood: Neighborhood, gridbounds: Option[GridBounds]) = LazyTile.FocalMin(this, neighborhood, gridbounds)
+  def focalMean(neighborhood: Neighborhood, gridbounds: Option[GridBounds]) = LazyTile.FocalMean(this, neighborhood, gridbounds)
+  def focalMedian(neighborhood: Neighborhood, gridbounds: Option[GridBounds]) = LazyTile.FocalMedian(this, neighborhood, gridbounds)
+  def focalMode(neighborhood: Neighborhood, gridbounds: Option[GridBounds]) = LazyTile.FocalMode(this, neighborhood, gridbounds)
+  def focalSum(neighborhood: Neighborhood, gridbounds: Option[GridBounds]) = LazyTile.FocalSum(this, neighborhood, gridbounds)
+  def focalStdDev(neighborhood: Neighborhood, gridbounds: Option[GridBounds]) = LazyTile.FocalStdDev(this, neighborhood, gridbounds)
 
   def left: LazyTile
   def right: LazyTile
@@ -41,6 +91,9 @@ sealed trait LazyTile extends TileLike with Grid with LazyLogging {
 
   def dualCombine(other: LazyTile)(f: (Int, Int) => Int)(g: (Double, Double) => Double): LazyTile.Tree =
     LazyTile.DualCombine(this, other, f, g)
+
+  def dualMap(f: Int => Int)(g: Double => Double): LazyTile.Tree =
+    LazyTile.DualMap(this, f, g)
 
   def mapIntMapper(mapper: IntTileMapper): LazyTile.Tree =
     LazyTile.IntMapper(this, mapper)
@@ -176,7 +229,7 @@ object LazyTile {
   case class Bound(tile: Tile) extends Tree {
     override def cols: Int = tile.cols
     override def rows: Int = tile.rows
-    def get(col: Int, row: Int): Int = tile.get(col, row)
+    def get(col: Int, row: Int): Int = tile.get(col,row)
     def getDouble(col: Int, row: Int): Double = tile.getDouble(col, row)
     def left = LazyTile.Nil
     def right = LazyTile.Nil
@@ -189,6 +242,35 @@ object LazyTile {
     def right = LazyTile.Nil
     def bind(args: Map[Var, LazyTile]): LazyTile =
       Classify(left.bind(args), f)
+  }
+
+  case class Masking(left: LazyTile, extent: Extent, mask: MultiPolygon) extends Tree {
+    lazy val cellMask: Tile = {
+      val masky = ArrayTile.empty(BitCellType, this.cols, this.rows)
+
+      RasterExtent(extent, this.cols, this.rows)
+        .foreach(mask)({ (col, row) => masky.set(col, row, 1) })
+
+      masky
+    }
+
+    /** Perform the NODATA checks ahead of time, in case the underlying Tile
+      * is sparse. This will then only check for Mask intersection if the value to
+      * give back could be something other than NODATA.
+      */
+    def get(col: Int, row: Int): Int = {
+      val v: Int = left.get(col, row)
+
+      if (isNoData(v)) v else if (cellMask.get(col, row) == 1) v else NODATA
+    }
+    def getDouble(col: Int, row: Int): Double = {
+      val v: Double = left.getDouble(col, row)
+
+      if (isNoData(v)) v else if (cellMask.get(col, row) == 1) v else Double.NaN
+    }
+    def right = LazyTile.Nil
+    def bind(args: Map[Var, LazyTile]): LazyTile =
+      Masking(left.bind(args), extent, mask)
   }
 
   case class MapInt(left: LazyTile, f: Int => Int) extends Tree {
@@ -205,6 +287,14 @@ object LazyTile {
     def right = LazyTile.Nil
     def bind(args: Map[Var, LazyTile]): LazyTile =
       MapDouble(left.bind(args), f)
+  }
+
+  case class DualMap(left: LazyTile, f: Int => Int, g: Double => Double) extends Tree {
+    def get(col: Int, row: Int) = f(left.get(col, row))
+    def getDouble(col: Int, row: Int) = g(left.getDouble(col, row))
+    def right = LazyTile.Nil
+    def bind(args: Map[Var, LazyTile]): LazyTile =
+      DualMap(left.bind(args), f, g)
   }
 
   case class IntMapper(left: LazyTile, mapper: IntTileMapper) extends Tree {
@@ -255,4 +345,60 @@ object LazyTile {
     def bind(args: Map[Var, LazyTile]): LazyTile =
       this
   }
+
+  trait FocalOperation extends Tree {
+    val gridbounds: Option[GridBounds]
+    override def cols: Int = gridbounds.map(_.width).getOrElse(left.cols)
+    override def rows: Int = gridbounds.map(_.height).getOrElse(left.rows)
+    def right = LazyTile.Nil
+    def intTile: Tile
+    def dblTile: Tile
+
+    def get(col: Int, row: Int) = intTile.get(col, row)
+    def getDouble(col: Int, row: Int) = dblTile.getDouble(col, row)
+    def bind(args: Map[Var, LazyTile]): LazyTile = this
+  }
+
+  @SuppressWarnings(Array("OptionGet"))
+  case class FocalMax(left: LazyTile, n: Neighborhood, gridbounds: Option[GridBounds]) extends FocalOperation {
+    lazy val intTile = focal.Max(left.evaluate.get, n, gridbounds)
+    lazy val dblTile = focal.Max(left.evaluateDouble.get, n, gridbounds)
+  }
+
+  @SuppressWarnings(Array("OptionGet"))
+  case class FocalMin(left: LazyTile, n: Neighborhood, gridbounds: Option[GridBounds]) extends FocalOperation {
+    lazy val intTile = focal.Min(left.evaluate.get, n, gridbounds)
+    lazy val dblTile = focal.Min(left.evaluateDouble.get, n, gridbounds)
+  }
+
+  @SuppressWarnings(Array("OptionGet"))
+  case class FocalMean(left: LazyTile, n: Neighborhood, gridbounds: Option[GridBounds]) extends FocalOperation {
+    lazy val intTile = focal.Mean(left.evaluate.get, n, gridbounds)
+    lazy val dblTile = focal.Mean(left.evaluateDouble.get, n, gridbounds)
+  }
+
+  @SuppressWarnings(Array("OptionGet"))
+  case class FocalMedian(left: LazyTile, n: Neighborhood, gridbounds: Option[GridBounds]) extends FocalOperation {
+    lazy val intTile = focal.Median(left.evaluate.get, n, gridbounds)
+    lazy val dblTile = focal.Median(left.evaluateDouble.get, n, gridbounds)
+  }
+
+  @SuppressWarnings(Array("OptionGet"))
+  case class FocalMode(left: LazyTile, n: Neighborhood, gridbounds: Option[GridBounds]) extends FocalOperation {
+    lazy val intTile = focal.Mode(left.evaluate.get, n, gridbounds)
+    lazy val dblTile = focal.Mode(left.evaluateDouble.get, n, gridbounds)
+  }
+
+  @SuppressWarnings(Array("OptionGet"))
+  case class FocalSum(left: LazyTile, n: Neighborhood, gridbounds: Option[GridBounds]) extends FocalOperation {
+    lazy val intTile = focal.Sum(left.evaluate.get, n, gridbounds)
+    lazy val dblTile = focal.Sum(left.evaluateDouble.get, n, gridbounds)
+  }
+
+  @SuppressWarnings(Array("OptionGet"))
+  case class FocalStdDev(left: LazyTile, n: Neighborhood, gridbounds: Option[GridBounds]) extends FocalOperation {
+    lazy val intTile = focal.StandardDeviation(left.evaluate.get, n, gridbounds)
+    lazy val dblTile = focal.StandardDeviation(left.evaluateDouble.get, n, gridbounds)
+  }
+
 }

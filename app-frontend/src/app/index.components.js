@@ -24,16 +24,32 @@ export default angular.module('index.components', [
     // tool components
     require('./components/tools/toolSearch/toolSearch.module.js').name,
     require('./components/tools/toolItem/toolItem.module.js').name,
+    require('./components/tools/toolCreateModal/toolCreateModal.module.js').name,
     require('./components/tools/diagramContainer/diagramContainer.module.js').name,
+    require('./components/tools/diagramNodeHeader/diagramNodeHeader.module.js').name,
+    require('./components/tools/inputNode/inputNode.module.js').name,
+    require('./components/tools/operationNode/operationNode.module.js').name,
+    require('./components/tools/constantNode/constantNode.module.js').name,
+    require('./components/map/nodeSelector/nodeSelector.module.js').name,
 
     // map components
     require('./components/map/mapContainer/mapContainer.module.js').name,
     require('./components/map/staticMap/staticMap.module.js').name,
+    require('./components/map/drawToolbar/drawToolbar.module.js').name,
+    require('./components/map/labMap/labMap.module.js').name,
+    require('./components/map/mapSearchModal/mapSearchModal.module.js').name,
+    require('./components/map/annotateToolbar/annotateToolbar.module.js').name,
+    require('./components/map/annotateSidebarItem/annotateSidebarItem.module.js').name,
 
     // settings components
     require('./components/settings/refreshTokenModal/refreshTokenModal.module.js').name,
+    require('./components/settings/enterTokenModal/enterTokenModal.module.js').name,
     require('./components/settings/featureFlagOverrides/featureFlagOverrides.module.js').name,
     require('./components/settings/tokenItem/tokenItem.module.js').name,
+
+    // export components
+    require('./components/exports/exportItem/exportItem.module.js').name,
+    require('./components/exports/exportDownloadModal/exportDownloadModal.module.js').name,
 
     // common components (no domain)
     require('./components/common/navBar/navBar.module.js').name,

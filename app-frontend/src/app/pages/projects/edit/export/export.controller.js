@@ -21,8 +21,22 @@ const availableResolutions = [
     }
 ];
 
+const availableTargets = [
+    {
+        label: 'Download',
+        value: 'internalS3',
+        default: true
+    }, {
+        label: 'S3 Bucket',
+        value: 'externalS3'
+    }, {
+        label: 'Dropbox',
+        value: 'dropbox'
+    }
+];
+
 export default class ExportController {
-    constructor($scope, $state, $timeout, projectService, toolService) {
+    constructor($scope, $state, $timeout, projectService, toolService, mapService) {
         'ngInject';
         this.$scope = $scope;
         this.$parent = this.$scope.$parent.$ctrl;
@@ -31,7 +45,9 @@ export default class ExportController {
         this.projectService = projectService;
         this.toolService = toolService;
         this.availableResolutions = availableResolutions;
+        this.availableTargets = availableTargets;
         this.availableProcessingOptions = this.projectService.availableProcessingOptions;
+        this.getMap = () => mapService.getMap('edit');
     }
 
     $onInit() {
@@ -40,11 +56,7 @@ export default class ExportController {
 
         // @TODO: this can be removed from both here and the template when the export target
         // feature is implemented
-        this.enableExportTargets = false;
-
-        // @TODO: this can be removed from both here and the template when the export cropping
-        // feature is implemented
-        this.enableExportCropping = false;
+        this.enableExportTargets = true;
 
         // @TODO: this can be removed from both here and the template when the export option
         // previews are implemented
@@ -58,11 +70,34 @@ export default class ExportController {
             raw: false
         };
 
+        // draw options
+        this.drawOptions = {
+            areaType: 'export',
+            requirePolygons: false
+        };
+
+        this.exportTargetURI = '';
         this.exportProcessingOption = this.getDefaultProcessingOption();
+        this.exportTarget = this.getDefaultTarget();
+
         this.$parent.fetchProject().then(project => {
             this.project = project;
         });
+
+        this.$scope.$on('$destroy', this.$onDestroy.bind(this));
     }
+
+    $onDestroy() {
+        this.getMap().then((mapWrapper) => {
+            mapWrapper.deleteLayers('Export Area');
+        });
+    }
+
+    getDefaultTarget() {
+        return this.availableTargets.find(t => t.default) ||
+               this.availableTargets[0];
+    }
+
 
     getDefaultProcessingOption() {
         return this.availableProcessingOptions.find(o => o.default) ||
@@ -75,16 +110,22 @@ export default class ExportController {
             .find(r => r.value === resolutionValue);
     }
 
+    getCurrentTarget() {
+        return this.exportTarget;
+    }
+
     getCurrentProcessingOption() {
         const option = this.exportProcessingOption;
         return this.availableProcessingOptions
             .find(o => o.value === option.value);
     }
 
+
     getExportOptions(options = {}) {
         return Object.assign(
             this.exportOptions,
             this.getCurrentProcessingOption().exportOptions,
+            this.mask ? {mask: this.mask} : {},
             options
         );
     }
@@ -99,12 +140,20 @@ export default class ExportController {
                !this.isLoadingTool;
     }
 
+    shouldShowTargetParams() {
+        return this.getCurrentTarget().value === 'externalS3';
+    }
+
     toggleParameters() {
         this.showParameters = !this.showParameters;
     }
 
     updateResolution(level) {
         this.exportOptions.resolution = level;
+    }
+
+    updateTarget(target) {
+        this.exportTarget = target;
     }
 
     handleOptionChange(state, option) {
@@ -151,8 +200,25 @@ export default class ExportController {
         }
     }
 
+    finalizeExportOptions() {
+        if (this.getCurrentTarget().value === 'externalS3') {
+            this.exportOptions.source = this.exportTargetURI;
+        } else if (this.getCurrentTarget().value === 'dropbox') {
+            this.exportOptions.source = `dropbox:///${this.project.id}`;
+        }
+    }
+
+    validate() {
+        let validationState = true;
+        if (this.getCurrentTarget().value === 'externalS3') {
+            validationState = validationState && this.exportTargetURI;
+        }
+        return validationState;
+    }
+
     startExport() {
         this.isExporting = true;
+        this.finalizeExportOptions();
         if (this.currentToolRun) {
             this.createToolRunExport();
         } else {
@@ -179,7 +245,9 @@ export default class ExportController {
 
     createBasicExport() {
         this.projectService
-            .export(this.project, {}, this.getExportOptions())
+            .export(this.project,
+                    {exportType: this.getCurrentTarget().value === 'dropbox' ? 'Dropbox' : 'S3' },
+                    this.getExportOptions())
             .finally(() => {
                 this.finishExport();
             });
@@ -192,5 +260,41 @@ export default class ExportController {
         this.$timeout(() => {
             this.$state.go('projects.edit');
         }, 500);
+    }
+
+    onDrawSave(multipolygon) {
+        this.drawing = false;
+        this.mask = multipolygon;
+        if (multipolygon) {
+            let exportAreaLayer = L.geoJSON(this.mask.geom, {
+                style: () => {
+                    return {
+                        weight: 2,
+                        fillOpacity: 0.2
+                    };
+                }
+            });
+            this.getMap().then((mapWrapper) => {
+                mapWrapper.setLayer('Export Area', exportAreaLayer, true);
+            });
+        } else {
+            this.getMap().then((mapWrapper) => {
+                mapWrapper.deleteLayers('Export Area');
+            });
+        }
+    }
+
+    onDrawCancel() {
+        this.drawing = false;
+        this.getMap().then((mapWrapper) => {
+            mapWrapper.showLayers('Export Area', true);
+        });
+    }
+
+    startDrawing() {
+        this.drawing = true;
+        this.getMap().then((mapWrapper) => {
+            mapWrapper.hideLayers('Export Area', false);
+        });
     }
 }

@@ -4,7 +4,7 @@ info:
   description: An application to find, view, and analyze geospatial data at any scale
   version: "0.1.0"
 
-host: localhost:9000
+host: app.rasterfoundry.com
 
 schemes:
   - http
@@ -165,7 +165,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     patch:
-      summary: Update user profile
+      summary: Update user profile information
       parameters:
         - name: Profile
           in: body
@@ -178,6 +178,27 @@ paths:
           description: Profile updated
           schema:
             $ref: '#/definitions/Auth0User'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      summary:
+        Update user api tokens
+      tags:
+        - Users
+      parameters:
+        - name: User
+          in: body
+          schema:
+            $ref: '#/definitions/User'
+      responses:
+        204:
+          description: No Content
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
           schema:
@@ -333,6 +354,24 @@ paths:
       responses:
         200:
           description: SUCCESS
+          schema:
+            $ref: '#/definitions/Datasource'
+    post:
+      summary: Create a datasource
+      description: |
+        Datasources are sensors that share common metadata, like default color corrections. Scenes from
+        a given datasource can be mosaiced and color corrected together.
+      tags:
+        - Datasources
+      parameters:
+        - $ref: '#/parameters/owner'
+        - $ref: '#/parameters/name'
+      # TODO: fill in all possible responses
+      responses:
+        201:
+          description: SUCCESS
+          schema:
+            $ref: '#/definitions/Datasource'
   /uploads/:
     x-resource: Uploads
     get:
@@ -497,6 +536,12 @@ paths:
       summary: Create a scene
       tags:
         - Imagery
+      parameters:
+        - name: scene
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Scene'
       responses:
         201:
           description: Successfully created a new scene
@@ -1673,7 +1718,7 @@ paths:
         - $ref: '#/parameters/uuid'
       responses:
         200:
-          description: List of urls to download exported data
+          description: List of files within an export
           schema:
             type: "array"
             items:
@@ -1681,6 +1726,33 @@ paths:
         404:
           description: |
             UUID parameter does not refer to an export or the user is not able to view the export it refers to or export was not finished successfully yet.
+          schema:
+            $ref: '#/definitions/Error'
+  /exports/{uuid}/files/{filename}:
+    x-resource: Exports
+    get:
+      summary: Download a file from an export
+      tags:
+        - Imagery
+      parameters:
+        - $ref: '#/parameters/uuid'
+        - name: filename
+          required: true
+          in: path
+          type: string
+          description: The filename of the file the user wishes to download. Filenames of an export need to first be fetched.
+      responses:
+        200:
+          description: The content of the reqested file
+          schema:
+            type: file
+        404:
+          description: |
+            UUID does not reference an export that exists, the user has access to, and has finished successfully. The filename may not exist
+          schema:
+            $ref: '#/definitions/Error'
+        503:
+          description: The request rate has been exceeded.
           schema:
             $ref: '#/definitions/Error'
 
@@ -2069,13 +2141,11 @@ definitions:
           type: string
           description: Human friendly label for map token
         project:
-          type: object
-          properties:
-            id:
-              type: string
-              format: UUID
-            name:
-              type: string
+          type: string
+          format: UUID
+        toolRun:
+          type: string
+          format: UUID
   MapTokenPaginated:
     allOf:
     - $ref: '#/definitions/PaginatedResponse'
@@ -2250,6 +2320,12 @@ definitions:
             - USER
             - VIEWER
             - OWNER
+        dropboxCredential:
+          type: string
+          description: Contains the user's dropbox credential if a connection has been configured
+        planetCredential:
+          type: string
+          description: Contains the user's planet credential if a connection has been configured
   UserWithOAuth:
     type: object
     properties:
@@ -2412,15 +2488,105 @@ definitions:
       required:
         - name
         - id
+  Geometry:
+      type: object
+      description: GeoJSon geometry
+      discriminator: type
+      required:
+        - type
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#geometry-objects
+      properties:
+        type:
+          type: string
+          enum:
+            - MultiPolygon
+          description: the geometry type
+  Point2D:
+      type: array
+      maxItems: 2
+      minItems: 2
+      items:
+        type: number
+  MultiPolygon:
+      type: object
+      description: GeoJson geometry
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#id6
+      allOf:
+        - $ref: "#/definitions/Geometry"
+        - properties:
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Point2D'
+  Composite:
+    type: object
+    description: mapping of bands to RGB
+    properties:
+      label:
+        type: string
+        description: Human readable label for color composite to describe what it is useful for (e.g. natural color)
+      value:
+        type: object
+        properties:
+          redBand:
+            type: integer
+          greenBand:
+            type: integer
+          blueBand:
+            type: integer
+
+
+  DatasourceCreated:
+    type: object
+    description: Grouping of imagery by creation source
+    allOf:
+      - type: object
+        properties:
+          visibility:
+            type: string
+            description: Level of restriction on viewing
+            enum:
+              - PUBLIC
+              - ORGANIZATION
+              - PRIVATE
+          organizationId:
+            type: string
+            description: uuid for organization
+          name:
+            type: string
+            description: human label name for datasource
+          extras:
+            type: object
+            description: additional related information for a datasource
+          composites:
+            $ref: '#/definitions/Composite'
+
+  Datasource:
+    allOf:
+      - $ref: '#/definitions/BaseModel'
+      - $ref: '#/definitions/UserTrackingMixin'
+      - $ref: '#/definitions/TimeModelMixin'
+      - $ref: '#/definitions/DatasourceCreated'
+
   Scene:
     allOf:
       - $ref: '#/definitions/BaseModel'
       - $ref: '#/definitions/UserTrackingMixin'
+      - $ref: '#/definitions/TimeModelMixin'
       - type: object
         properties:
           name:
             type: string
             description: The display name of the project
+          ingestLocation:
+            type: string
+            description: Where scene is ingested (pyramided/tiled)
           ingestSizeBytes:
             type: integer
             description: Size of ingested data in bytes.
@@ -2435,7 +2601,7 @@ definitions:
             type: array
             description: Tags associated with image
             items:
-              - type: string
+              type: string
           images:
             type: array
             items:
@@ -2448,15 +2614,13 @@ definitions:
             type: string
             format: uuid
             description: Data source scene originated from
-          # TODO: make work with geometry objects
           dataFootprint:
+            $ref: '#/definitions/MultiPolygon'
             description: polygon for which this scene has data
-            type: object
             readOnly: true
-          # TODO: make work with geometry objects
           tileFootprint:
-            type: object
-            description: polygon enclosing this scene
+            $ref: '#/definitions/MultiPolygon'
+            description: polygon for tile
             readOnly: true
           sceneMetadata:
             type: object
@@ -2469,7 +2633,7 @@ definitions:
               Metadata files that should be present for processing all
               images in a scene (e.g. relevant .mtl files or .xml)
             items:
-              - type: string
+              type: string
           filterFields:
             $ref: '#/definitions/FilterFields'
           statusFields:
@@ -2529,8 +2693,8 @@ definitions:
   SceneGrid:
     type: array
     items:
-      - type: number
-        format: integer
+      type: number
+      format: integer
     readOnly: true
 
   Project:
@@ -2566,7 +2730,7 @@ definitions:
         tags:
           type: array
           items:
-            - type: string
+            type: string
         extent:
           type: object
           description: GeoJSON Geometry of project extent
@@ -2600,6 +2764,7 @@ definitions:
           description: URI to original source. This should include a protocol-like prefix to identify where it is located http://, s3://, etc.
         rawDataBytes:
           type: integer
+          format: int64
           description: Size of original uploaded imagery in bytes
         bands:
           type: array
@@ -2653,6 +2818,9 @@ definitions:
   Band:
     type: object
     properties:
+      id:
+        type: string
+        format: UUID
       image:
         type: string
         format: UUID
@@ -2669,6 +2837,7 @@ definitions:
   Thumbnail:
     allOf:
     - $ref: '#/definitions/BaseModel'
+    - $ref: '#/definitions/TimeModelMixin'
     - type: object
       properties:
         widthPx:
@@ -2902,6 +3071,7 @@ definitions:
           type: array
           items:
             type: string
+          description: An array of strings of file locations. If a source is provided, this can be empty
         uploadType:
           type: string
           description: Source of files and uploads
@@ -2930,6 +3100,11 @@ definitions:
           type: string
           format: uuid
           description: during the import process, add scenes to a project if specified
+        source:
+          type: string
+          description: for uploads of type S3 and Dropbox, the location of the files to import. If files are specified, this field is ignored
+        sceneMetadata:
+          $ref: '#/definitions/UploadMetadata'
   Upload:
     allOf:
     - $ref: '#/definitions/BaseModel'
@@ -2943,6 +3118,15 @@ definitions:
             type: string
         metadata:
           type: object
+  UploadMetadata:
+    type: object
+    properties:
+      sceneCloudCover:
+        type: number
+        format: float32
+      sceneAcquisitionDate:
+        type: string
+        format: datetime
   UploadPaginated:
     allOf:
     - $ref: '#/definitions/PaginatedResponse'
@@ -3058,7 +3242,6 @@ definitions:
   CombinedSceneQueryParams:
     type: object
     description: Combined query parameters for filtering scenes
-    discriminator: type
     properties:
       orgParams:
         $ref: '#/definitions/OrgParams'
