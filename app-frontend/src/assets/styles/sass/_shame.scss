@@ -377,7 +377,7 @@ rf-project-editor .leaflet-tile {
       border-bottom: 1px solid $border-color-default;
       margin-bottom: 1rem;
       margin: 0rem 1rem 0rem 1rem;
-      padding: 1.5rem 0 1.5rem 0;
+      padding: 1.5rem 20px 1.5rem 20px;
       &:last-of-type{
         border-bottom: none;
       }
@@ -405,7 +405,9 @@ rf-project-editor .leaflet-tile {
       margin-right: 1rem;
       .text {
         font-weight: normal;
-        font-size: 1.2rem;
+        font-size: 16px;
+        line-height: 1.88;
+        padding: 20px;
       }
       .info {
         font-size: 1.2rem;
@@ -853,8 +855,6 @@ div.lab-workspace.is-dragging svg {
       border-radius: $border-radius-base !important;
       vertical-align: middle;
       line-height: 1.1;
-      height: 25px;
-      width: 25px;
     }
   }
 }

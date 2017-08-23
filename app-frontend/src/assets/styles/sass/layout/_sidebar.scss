@@ -41,12 +41,17 @@
 }
 
 .sidebar-static {
+  padding: 1rem 1.5rem;
   flex: none;
   position: relative;
   border-bottom: 2px solid $border-color-default;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+
+  .btn-primary {
+    margin: 10px 0;
+  }
 
   &:first-child {
     border-bottom: 2px solid $border-color-default;
