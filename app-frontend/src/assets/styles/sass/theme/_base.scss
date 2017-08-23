@@ -23,15 +23,32 @@ p {
   line-height: 1.88;
 }
 
-.dashboard-header {
-  display: none;
-}
-
 .panel-body {
   padding: 0;
 
   h4 {
     margin-bottom: 2rem;
+  }
+}
+
+.container.dashboard {
+  .panel-body {
+    border: 1px solid rgba($gray-radiant, .1);
+    padding: 10px;
+
+    .dropdown-toggle {
+      color: rgba($text-base, 0.5);
+      background: rgba($gray-radiant, 0.05) !important;
+
+      i {
+        color: rgba($text-base, 0.5);
+      }
+
+      &:hover {
+        background: rgba($gray-radiant, 0.2) !important;
+        color: $text-base;
+      }
+    }
   }
 }
 

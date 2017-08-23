@@ -9,21 +9,36 @@
   &.btn-default,
   &.btn-light,
   &.btn-toggle,
-  &.dropdown-label {
+  &.dropdown-label,
+  &.pull-lef {
     color: rgba($text-base, 0.5);
-    background: rgba($brand-secondary, 0.05) !important;
+    background: rgba($gray-radiant, 0.05) !important;
 
     &:hover {
+      background: rgba($gray-radiant, 0.2) !important;
       color: $text-base;
     }
   }
 
   &.btn-primary,
-  &.btn-secondary {
+  &.btn-secondary,
+  &.btn-square {
     background-color: $brand-primary;
+    color: $white !important;
 
     &:hover {
+      color: $white !important;
       background-color: $primary-hover;
+    }
+  }
+
+  &.dropdown-toggle {
+    background-color: $brand-primary !important;
+    color: $white !important;
+
+    &:hover {
+      background-color: rgba($brand-primary, .5) !important;
+      color: $gray-radiant !important;
     }
   }
 
@@ -33,4 +48,8 @@
   &.focus {
     box-shadow: none !important;
   }
+}
+
+.navmenu {
+
 }

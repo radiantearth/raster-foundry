@@ -5,6 +5,12 @@
     background-color: $white;
   }
 
+  .sidebar-extended.map-filters {
+    .sidebar-header {
+      background-color: #f4f5f5 !important;
+    }
+  }
+
   .icon-arrow-left:before {
     color: $brand-primary;
   }
