@@ -28,9 +28,11 @@ const App = angular.module(
         'tandibar/ng-rollbar',
         'angular.filter',
         '720kb.tooltips',
+        'uuid4',
+        'angucomplete-alt',
 
-        // core
-        require('./core/core.module').name,
+        // services
+        require('./services/services.module').name,
 
         // components
         require('./index.components').name,
@@ -47,6 +49,7 @@ const App = angular.module(
         require('./pages/lab/lab.module.js').name,
         require('./pages/lab/edit/edit.module.js').name,
         require('./pages/lab/run/run.module.js').name,
+        require('./pages/lab/run/navbar/navbar.module.js').name,
 
         require('./pages/market/market.module.js').name,
         require('./pages/market/search/search.module.js').name,
@@ -56,6 +59,8 @@ const App = angular.module(
         require('./pages/projects/navbar/navbar.module.js').name,
         require('./pages/projects/list/list.module.js').name,
         require('./pages/projects/detail/detail.module.js').name,
+        require('./pages/projects/detail/scenes/scenes.module.js').name,
+        require('./pages/projects/detail/exports/exports.module.js').name,
         require('./pages/projects/edit/edit.module.js').name,
         require('./pages/projects/edit/scenes/scenes.module.js').name,
         require('./pages/projects/edit/browse/browse.module.js').name,
@@ -68,8 +73,8 @@ const App = angular.module(
         require('./pages/projects/edit/masking/draw/draw.module.js').name,
         require('./pages/projects/edit/aoi-approve/aoi-approve.module.js').name,
         require('./pages/projects/edit/aoi-parameters/aoi-parameters.module.js').name,
-        require('./pages/projects/edit/aoi-parameters/draw-aoi/draw-aoi.module.js').name,
         require('./pages/projects/edit/export/export.module.js').name,
+        require('./pages/projects/edit/annotate/annotate.module.js').name,
 
         require('./pages/imports/imports.module.js').name,
         require('./pages/imports/datasources/datasources.module.js').name,

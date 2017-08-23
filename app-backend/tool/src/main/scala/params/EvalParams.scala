@@ -3,10 +3,14 @@ package com.azavea.rf.tool.params
 import java.util.UUID
 
 import cats.syntax.either._
+import com.azavea.rf.bridge._
 import com.azavea.rf.tool.ast._
+import geotrellis.vector.MultiPolygon
 import io.circe._
 import io.circe.syntax._
 import io.circe.generic.JsonCodec
+
+// --- //
 
 /* Yes, it is correct that all three of these fields can be empty. It is
  * possible to construct a legal AST that will produce results yet has no
@@ -43,19 +47,22 @@ object ParamOverride {
 
   @JsonCodec case class Classification(classMap: ClassMap) extends ParamOverride
   @JsonCodec case class Constant(constant: Double) extends ParamOverride
+  @JsonCodec case class Masking(mask: MultiPolygon) extends ParamOverride
 
   /** Add more possibilities as necessary with the `.orElse` mechanic
     * (the "Alternative" pattern).
     */
   implicit val dec: Decoder[ParamOverride] = Decoder.instance[ParamOverride]({ po =>
-    po.downField("classify").as[Classification]
-      .orElse(po.downField("constant").as[Constant])
+    po.as[Classification]
+      .orElse(po.as[Constant])
+      .orElse(po.as[Masking])
   })
 
   implicit val enc: Encoder[ParamOverride] = new Encoder[ParamOverride] {
     def apply(overrides: ParamOverride): Json = overrides match {
       case c: Classification => c.asJson
       case c: Constant => c.asJson
+      case m: Masking => m.asJson
     }
   }
 }

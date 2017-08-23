@@ -4,7 +4,7 @@ import os
 import subprocess
 
 from airflow.models import DAG
-from airflow.operators import PythonOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.exceptions import AirflowException
 
 from rf.utils.exception_reporting import wrap_rollbar
@@ -19,7 +19,6 @@ ch.setLevel(logging.INFO)
 ch.setFormatter(formatter)
 
 logging.getLogger('rf').addHandler(ch)
-logging.getLogger().addHandler(ch)
 
 logger = logging.getLogger(__name__)
 

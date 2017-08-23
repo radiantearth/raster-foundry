@@ -3,7 +3,7 @@ package com.azavea.rf.batch.ingest
 import io.circe._
 import io.circe.syntax._
 
-import com.azavea.rf.datamodel._
+import com.azavea.rf.bridge._
 
 import geotrellis.proj4._
 import geotrellis.raster._
@@ -14,7 +14,6 @@ import geotrellis.vector._
 import cats.syntax.either._
 
 import spray.json._
-import spray.json.DefaultJsonProtocol._
 
 package object model {
   implicit object CRSJsonFormat extends JsonFormat[CRS] {
@@ -167,6 +166,6 @@ package object model {
     Encoder.encodeString.contramap[CellType] { _.toString }
   implicit val cellTypeDecoder: Decoder[CellType] =
     Decoder.decodeString.emap { str =>
-      Either.catchNonFatal(CellType.fromString(str)).leftMap(_ => "CellType")
+      Either.catchNonFatal(CellType.fromName(str)).leftMap(_ => "CellType")
     }
 }
