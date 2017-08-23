@@ -1,4 +1,24 @@
 .form-group.all-in-one {
+  border: 1px solid rgba($gray-radiant, .5);
+  border-radius: 100px !important;
+  display: flex !important;
+  align-items: center !important;
+
+   .form-control {
+     top: 1px !important;
+     height: 100% !important;
+   }
+
+  .btn-link {
+    background-color: $brand-primary;
+    border-radius: 20px !important;
+    left: 3px !important;
+    color: $white !important;
+  }
+
+  .btn.btn-primary {
+    border-radius: 20px !important;
+  }
 
   .form-control {
     position: relative;

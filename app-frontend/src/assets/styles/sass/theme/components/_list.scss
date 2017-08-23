@@ -1,0 +1,7 @@
+.list-group-item {
+  border: 1px solid rgba($gray-radiant, .1);
+
+  &:last-of-type {
+    border: 1px solid rgba($gray-radiant, .1) !important;
+  }
+}
