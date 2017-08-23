@@ -66,15 +66,14 @@
   text-decoration: none;
   border-radius: $border-radius-base;
   user-select: none;
-  background: #fff;
+  background: $shade-normal;
   border: 1px solid $shade-light;
   color: $shade-light;
   will-change: opacity, border;
 
   &:hover, &.hover,
   &:active, &.active, {
-    color: #fff;
-    background-color: lighten($shade-light, 10%);
+    background-color: darken($shade-normal, 5%);
   }
 
   &:active, &.active {
@@ -105,7 +104,7 @@
   border-color: darken($shade-normal, 5%);
   color: #fff;
 
-  @include button-states($shade-normal);
+  @include button-states(darken($shade-normal, 5%));
 }
 
 .btn-light {
@@ -122,6 +121,11 @@
   color: #fff;
 
   @include button-states($brand-primary);
+
+  &:hover, &.hover,
+  &:active, &.active, {
+    color: $white !important;
+  }
 }
 
 .btn-secondary {
@@ -130,6 +134,11 @@
   color: #fff;
 
   @include button-states($brand-secondary);
+
+  &:hover, &.hover,
+  &:active, &.active, {
+    color: $white !important;
+  }
 }
 
 .btn-tertiary {
@@ -138,6 +147,11 @@
   color: #fff;
 
   @include button-states($brand-tertiary);
+
+  &:hover, &.hover,
+  &:active, &.active, {
+    color: $white !important;
+  }
 }
 
 .btn-warning {
@@ -171,7 +185,7 @@
 }
 
 .btn-ghost-white {
-  background-color: transparent;
+  background-color: $shade-normal !important;
   color: #fff;
   border-color: #fff;
 
@@ -308,6 +322,11 @@
  */
 .btn-group {
   display: flex !important;
+
+  .dropdown-toggle {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
 
   .btn {
     margin: 0 !important;
