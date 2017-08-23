@@ -1,0 +1,85 @@
+.auth0-lock-overlay {
+  background-color: rgba($gray-radiant, .05) !important;
+  background: rgba($gray-radiant, .05) !important;
+}
+
+.auth0-lock {
+  background-color: $white !important;
+  background: $white !important;
+}
+
+.auth0-lock-center {
+  .auth0-lock-header {
+    background-color: rgba($gray-radiant, .2) !important;
+    background: rgba($gray-radiant, .2) !important;
+  }
+  .auth0-lock-header-bg {
+    display: none;
+  }
+  .auth0-lock-widget {
+    box-shadow: none !important;
+    border: 1px solid rgba($gray-radiant, .1);
+  }
+
+  .auth0-lock-input-block  {
+    margin-bottom: 20px !important;
+
+    .auth0-lock-input-wrap {
+      border: 0 !important;
+      border-bottom: 1px solid rgba($gray-radiant, .5) !important;
+      border-radius: 0 !important;
+      background-color: $white !important;
+    }
+  }
+
+  .auth0-lock-alternative-link {
+    color: rgba($gray-radiant, .5) !important;
+
+    &:hover {
+      color: $gray-radiant !important;
+    }
+  }
+
+  .auth0-lock-submit {
+    background-color: rgba($brand-primary, .9) !important;
+    width: 90% !important;
+    height: 40px !important;
+    margin-bottom: 20px !important;
+    margin: 0 auto 20px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    align-content: center !important;
+    padding: 0 !important;
+    border-radius: 100px !important;
+
+    &:hover {
+      background-color: $brand-primary !important;
+    }
+  }
+
+  .auth0-lock-social-big-button {
+    background-color: rgba($brand-primary, .9) !important;
+    width: 90% !important;
+    height: 40px !important;
+    margin-bottom: 20px !important;
+    margin: 0 auto 20px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    align-content: center !important;
+    padding: 0 !important;
+    border-radius: 100px !important;
+
+    &:hover {
+      background-color: $brand-primary !important;
+    }
+  }
+
+  .auth0-lock-tabs-current,
+  .auth0-lock-tabs {
+    a {
+      background-image: none !important;
+    }
+  }
+}
