@@ -12,6 +12,14 @@
     margin-bottom: 10px;
   }
 
+  .btn-small {
+    background-color: rgba($brand-secondary, 0.3) !important;
+
+    &:hover {
+      background-color: rgba($brand-secondary, 0.5) !important;
+    }
+  }
+
   .map-zoom {
     display: none;
   }
