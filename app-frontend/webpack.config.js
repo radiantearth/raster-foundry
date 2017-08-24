@@ -29,8 +29,8 @@ let load = function () {
 
     // load config file by environment
     return configs && merge(
-        configs.overrides ? configs.overrides(__dirname) : null,
         configs.global(__dirname),
+        configs.overrides ? configs.overrides(__dirname) : null,
         configs[ENV](__dirname)
     );
 };
