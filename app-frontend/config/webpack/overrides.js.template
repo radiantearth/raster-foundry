@@ -3,6 +3,11 @@
 /* no-console: 0 */
 
 const webpack = require('webpack');
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+const NODE_ENV = process.env.NODE_ENV || 'production';
+const DEVELOPMENT = NODE_ENV === 'production' ? false : true;
 
 const basemaps = JSON.stringify({
     layers: {
@@ -26,7 +31,7 @@ const basemaps = JSON.stringify({
     default: 'Light'
 });
 
-module.exports = function () {
+module.exports = function (_path) {
     return {
         plugins: [
             new webpack.DefinePlugin({
@@ -35,6 +40,14 @@ module.exports = function () {
                     BASEMAPS: basemaps,
                     API_HOST: '\'https://app.rasterfoundry.com\''
                 }
+            }),
+
+            new HtmlWebpackPlugin({
+                filename: 'index.html',
+                template: path.join(_path, 'src', 'tpl-index.html'),
+                heapLoad: DEVELOPMENT ? '2743344218' : '3505855839',
+                development: DEVELOPMENT,
+                title: 'Radiant.Earth Platform'
             })
         ]
     };
