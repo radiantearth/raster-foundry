@@ -214,10 +214,13 @@
   }
 }
 
-.dropdown-my-account {
-  .dropdown-toggle{
-    .icon-caret-down {
-      display: inline-block !important;
+.primary-navbar {
+  .dropdown-my-account {
+    .dropdown-toggle{
+      .icon-caret-down {
+        display: inline-block !important;
+        width: auto !important;
+      }
     }
   }
 }
