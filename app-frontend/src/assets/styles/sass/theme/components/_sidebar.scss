@@ -31,3 +31,20 @@
     }
   }
 }
+
+.sidebar-scrollable {
+  .filter {
+    flex-direction: column;
+
+    label {
+      margin-bottom: 10px;
+    }
+
+    .filter-item {
+      &.tag-filter {
+        display: flex !important;
+        justify-content: space-between !important;
+      }
+    }
+  }
+}

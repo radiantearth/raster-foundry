@@ -10,7 +10,8 @@
   &.btn-light,
   &.btn-toggle,
   &.dropdown-label,
-  &.pull-lef {
+  &.pull-lef,
+  &.btn-tiny {
     color: rgba($text-base, 0.5);
     background: rgba($gray-radiant, 0.05) !important;
 
@@ -33,12 +34,12 @@
   }
 
   &.dropdown-toggle {
-    background-color: $brand-primary !important;
+    background-color: rgba($brand-primary, .5) !important;
     color: $white !important;
 
     &:hover {
-      background-color: rgba($brand-primary, .5) !important;
-      color: $gray-radiant !important;
+      background-color: $brand-primary !important;
+      color: $white !important;
     }
   }
 
@@ -52,4 +53,27 @@
 
 .navmenu {
 
+}
+
+.panel-off-white {
+  .btn-tiny {
+    background-color: $brand-primary !important;
+    color: $white !important;
+
+    &:hover {
+      color: $white !important;
+      background-color: $primary-hover !important;
+    }
+  }
+}
+
+.btn-group {
+  .dropdown-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+  }
+}
+
+.draw-toolbar-actions .btn {
+  color: $white !important;
 }

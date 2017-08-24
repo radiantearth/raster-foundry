@@ -5,3 +5,43 @@
     border: 1px solid rgba($gray-radiant, .1) !important;
   }
 }
+
+.map-search-results-item .label {
+  color: $gray-radiant !important;
+  background-color: rgba($gray-radiant, .1);
+  border-radius: 100px !important;
+
+  &:hover {
+    color: $gray-radiant !important;
+    background-color: rgba($gray-radiant, .2);
+  }
+}
+
+.map-search-results-item {
+  &.active {
+    .label {
+      color: $white !important;
+
+      &:hover {
+        color: $white !important;
+      }
+    }
+  }
+}
+
+.token-item-container {
+  .list-group-right {
+    .form-group.all-in-one {
+      .btn {
+        font-size: 14px !important;
+
+        &:first-of-type {
+          &:hover {
+            background-color: $white !important;
+            color: $gray-radiant !important;
+          }
+        }
+      }
+    }
+  }
+}
