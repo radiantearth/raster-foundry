@@ -3,11 +3,15 @@
 
   .sidebar-header {
     background-color: $white;
+
+    .btn {
+      color: $white !important;
+    }
   }
 
   .sidebar-extended.map-filters {
     .sidebar-header {
-      background-color: #f4f5f5 !important;
+      background-color: rgba($gray-radiant, .5) !important;
     }
   }
 
