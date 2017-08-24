@@ -96,7 +96,7 @@
   }
 }
 
-/* 
+/*
  * Solid bg-color buttons
  */
 .btn-default {
@@ -160,8 +160,8 @@
   border-color: transparent;
 }
 
-/* 
- * Ghost buttons, borders only
+ /*
+  Ghost buttons, borders only
  */
 .btn-ghost {
   background-color: transparent;
@@ -183,7 +183,7 @@
   @include ghost-button-states($shade-normal, #fff);
 }
 
-/* 
+/*
  * Button styled link a link
  */
 .btn-link {

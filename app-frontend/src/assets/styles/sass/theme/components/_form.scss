@@ -1,0 +1,83 @@
+.form-group.all-in-one {
+  border: 1px solid rgba($gray-radiant, .5);
+  border-radius: 100px !important;
+  display: flex !important;
+  align-items: center !important;
+
+   .form-control {
+     top: 1px !important;
+     height: 100% !important;
+   }
+
+  .btn-link {
+    background-color: $brand-primary;
+    border-radius: 20px !important;
+    left: 3px !important;
+    color: $white !important;
+  }
+
+  .btn.btn-primary {
+    border-radius: 20px !important;
+  }
+
+  .form-control {
+    position: relative;
+    top: 5px;
+    border-bottom: 0 !important;
+  }
+}
+
+.form-control {
+  border-radius: 0 !important;
+  border-color: transparent !important;
+  border-bottom: 1.5px solid $brand-secondary !important;
+  background-color: transparent !important;
+  font-family: $font-family-1;
+  font-size: 14px;
+  color: $text-base;
+  font-weight: $font-weight-regular;
+  padding: 0;
+  height: 38px;
+
+  &:focus {
+    box-shadow: none;
+  }
+
+  &.ng-empty:not(:hover) {
+    border-bottom-color: rgba($brand-secondary, 0.3) !important;
+  }
+}
+
+label {
+
+  &.checkbox {
+
+    &:after {
+      border-radius: 100%;
+    }
+
+    &:hover:before {
+      opacity: 1 !important;
+    }
+
+    &:hover:after {
+      border: 1px solid $brand-secondary;
+    }
+  }
+}
+
+.form-group.search-form {
+  border-radius: 0 !important;
+  border-bottom-color: rgba($brand-secondary, 0.3) !important;
+  display: flex;
+  align-items: center;
+
+  .form-control {
+    padding-left: 10px !important;
+    border-bottom: 0 !important;
+  }
+
+  .btn-link {
+    padding-right: 10px !important;
+  }
+}

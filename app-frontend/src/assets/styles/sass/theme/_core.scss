@@ -1,6 +1,6 @@
-/* 
+/*
  * Raster Foundry theming
- * Be sure to uncomment the theme declarations in 
+ * Be sure to uncomment the theme declarations in
  * styles/sass/app.scss
 
  * To override default variables see theme settings
@@ -9,3 +9,29 @@
  * Use this file to declare overrides to default theme
  * example: .btn {padding: 50px;}
  */
+
+@import
+"settings/fonts",
+"settings/icons";
+
+@import
+"base";
+
+@import
+"components/headings",
+"components/navbar",
+"components/sidebar",
+"components/button",
+"components/slider",
+"components/spacing",
+"components/form",
+"components/picture_description",
+"components/badge",
+"components/modal",
+"components/map",
+"components/dashboard",
+"components/lab",
+"components/tabs",
+"components/list",
+"components/calendar",
+"components/loginPage";

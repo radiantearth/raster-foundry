@@ -23,6 +23,12 @@
 .panel-body {
   padding: 2rem;
 
+  .cta-text {
+    a {
+      color: rgba($text-base, 0.5) !important;
+    }
+  }
+
   .row {
     margin-bottom: 0;
   }

@@ -1,0 +1,30 @@
+.list-group-item {
+  border: 1px solid rgba($gray-radiant, .1);
+
+  &:last-of-type {
+    border: 1px solid rgba($gray-radiant, .1) !important;
+  }
+}
+
+.map-search-results-item .label {
+  color: $gray-radiant !important;
+  background-color: rgba($gray-radiant, .1);
+  border-radius: 100px !important;
+
+  &:hover {
+    color: $gray-radiant !important;
+    background-color: rgba($gray-radiant, .2);
+  }
+}
+
+.map-search-results-item {
+  &.active {
+    .label {
+      color: $white !important;
+
+      &:hover {
+        color: $white !important;
+      }
+    }
+  }
+}

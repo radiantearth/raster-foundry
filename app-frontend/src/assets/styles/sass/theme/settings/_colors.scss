@@ -1,26 +1,29 @@
 // Brand Colors:
-$brand-primary: #738FFC;
-$brand-secondary: #2FC1D0;
-$brand-tertiary: #53B1E0;
-
-// Base Colors:
-$text-base: #7B8391;
-$shade-light: #959CAC;
-$shade-normal: #465076;
-$shade-dark: #353C58;
-
-// grays:
-$gray: #38394f;
-$gray-light: lighten($gray, 10%); //#4d4f6d
-$gray-lighter: lighten($gray, 35%); //#8c8dad
-$gray-lightest: #ddd;
-$gray-dark: darken($gray, 2%); //#343549
-$gray-darker: #1b1c31;
-$link-color: $brand-primary;
+$brand-primary: #0B5FBF;
+$brand-secondary: #2F343B;
+$brand-tertiary: #0B5FBF;
 
 // whites
 $white: #fff;
 $off-white: #f3f3f3;
+
+// Base Colors:
+$text-base: #2F343B;
+$shade-light: #959CAC;
+$shade-normal: #F4F5F5;
+$shade-dark: #353C58;
+
+// grays:
+$gray: #38394f;
+$gray-light: $white;
+$gray-lighter: $white;
+$gray-lightest: $white;
+$gray-dark: $white;
+$gray-darker: $white;
+$link-color: $brand-primary;
+
+//blacks:
+$black: #000000;
 
 // Action Colors:
 $warning: #E69348;
@@ -29,3 +32,8 @@ $danger: #F98094;
 $green: #81C784;
 $yellow: #FFCA28;
 $red: #E57373;
+
+// Buttons
+$primary-hover: #0955ac;
+
+$gray-radiant: #2F343B;

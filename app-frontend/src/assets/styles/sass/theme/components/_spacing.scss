@@ -1,0 +1,24 @@
+.pb-25 {
+  padding-bottom: 1.59rem;
+}
+
+.app-connections-group {
+  .app-connection-container {
+    margin-right: 20px;
+    padding: 20px !important;
+    border: 1px solid rgba($gray-radiant, .05) !important;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .app-connection-action {
+      text-align: center !important;
+      margin-top: 10px;
+    }
+
+    .app-connection-info {
+      text-align: right !important;
+    }
+  }
+}
