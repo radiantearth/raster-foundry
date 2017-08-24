@@ -3,6 +3,7 @@
   border-radius: 100px !important;
   display: flex !important;
   align-items: center !important;
+  padding-left: 10px !important;
 
    .form-control {
      top: 1px !important;
@@ -85,5 +86,11 @@ label {
 .output-description {
   strong {
     color: $gray-radiant !important;
+  }
+}
+
+.form-group {
+  label {
+    margin-top: 20px !important;
   }
 }
