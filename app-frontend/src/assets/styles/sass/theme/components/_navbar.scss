@@ -148,4 +148,37 @@
   color: $text-base;
 }
 
+.navbar {
+  .navbar-detail-title {
+    display: none !important;
+    color: $gray-radiant !important;
+  }
 
+  .dropdown-navbar-detail {
+    .dropdown-toggle {
+      margin-left: 30px !important;
+      min-width: 200px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      border-bottom: 1px solid rgba($gray-radiant, .2) !important;
+
+      .icon-caret-down {
+        width: 100%;
+        display: block;
+        text-align: right;
+      }
+
+      .sr-only {
+        width: auto !important;
+        height: auto !important;
+        clip: auto !important;
+      }
+    }
+
+    .dropdown-menu {
+      width: calc(100% - 40px) !important;
+      left: 30px !important;
+      min-width: auto !important;
+    }
+  }
+}
