@@ -77,3 +77,15 @@
 .draw-toolbar-actions .btn {
   color: $white !important;
 }
+
+.btn-group {
+  &.inline {
+    .btn-primary {
+      background-color: lighten($brand-primary, 10%) !important;
+
+      &.active {
+        background-color: $brand-primary !important;
+      }
+    }
+  }
+}

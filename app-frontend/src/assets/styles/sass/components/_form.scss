@@ -8,18 +8,6 @@ form {
 .form-group {
   margin-bottom: 2rem;
 
-  .btn-group {
-    &.inline {
-      .btn-primary {
-        background-color: lighten($brand-primary, 10%);
-
-        &.active {
-          background-color: $brand-primary;
-        }
-      }
-    }
-  }
-
   &.input-dark {
     border-color: $shade-dark;
     background-color: $shade-dark;
@@ -152,7 +140,6 @@ input[type=radio] {
   border-radius: $border-radius-base;
   border: 1px solid $border-color-default;
   background-color: #fff;
-  padding-left: 10px;
 
   label:not(.sr-only) {
     position: relative;
