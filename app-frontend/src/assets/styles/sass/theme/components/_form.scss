@@ -65,3 +65,19 @@ label {
     }
   }
 }
+
+.form-group.search-form {
+  border-radius: 0 !important;
+  border-bottom-color: rgba($brand-secondary, 0.3) !important;
+  display: flex;
+  align-items: center;
+
+  .form-control {
+    padding-left: 10px !important;
+    border-bottom: 0 !important;
+  }
+
+  .btn-link {
+    padding-right: 10px !important;
+  }
+}
