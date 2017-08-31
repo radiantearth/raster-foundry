@@ -97,6 +97,7 @@
   border-color: transparent !important;
 
   &:hover {
+    background-color: darken(#eee, 5%) !important;
     color: #959CAC !important;
   }
 }
