@@ -1,0 +1,35 @@
+.rzslider {
+
+  .rz-pointer {
+    width: 17px;
+    height: 17px;
+    border-radius: 100%;
+    outline: none;
+  }
+
+  .rz-bar {
+    background: rgba($brand-secondary, 0.05);
+    height: 7px;
+    top: 2px;
+
+    &.rz-selection {
+      background: rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .rz-ticks {
+
+    .rz-tick {
+      background: rgba($brand-secondary, 0.2) !important;
+
+      .rz-tick-value {
+        font-family: $font-family-1;
+        font-weight: $font-weight-regular;
+        font-size: 12px;
+        letter-spacing: 1px;
+        color: rgba($brand-secondary, 0.3);
+        top: -2px;
+      }
+    }
+  }
+}

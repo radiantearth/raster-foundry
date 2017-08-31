@@ -1,0 +1,17 @@
+.picture-description {
+
+  .panel {
+    border-radius: 0;
+    padding: 10px;
+  }
+}
+
+.panel {
+  .panel-body {
+    .cta-text {
+      a {
+        color: rgba($text-base, 0.5) !important;
+      }
+    }
+  }
+}

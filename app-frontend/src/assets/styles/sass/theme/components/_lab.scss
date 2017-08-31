@@ -1,0 +1,19 @@
+.lab-control-panel {
+  background-color: transparent;
+
+  .btn-default {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: $white !important;
+    width: 40px;
+    height: 40px;
+    border: solid 1.5px rgba($brand-secondary, 0.3) !important;
+    font-size: 23px;
+    margin-left: 10px;
+
+    .icon-resize-full {
+      font-size: 15px;
+    }
+  }
+}

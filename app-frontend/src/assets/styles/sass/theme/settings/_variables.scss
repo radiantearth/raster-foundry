@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat:300,400,700');
+
 /* * * *
  * Screen Sizes
  * Used in tools/_mixins.scss > @mixin respond-to($breakpoint)
@@ -30,14 +32,14 @@ $column-padding: 1rem;
 /* * * *
  * Fonts
  * * * */
-$font-base: 'Open Sans', sans-serif;
-$font-header: 'Titillium Web', sans-serif;
+$font-base: 'Montserrat', sans-serif;
+$font-header: 'Montserrat', sans-serif;
 
 
 /* * * *
  * Borders 
  * * * */
 // Border Radius
-$border-radius-base: 2px;
+$border-radius-base: 20px;
 // Border color
-$border-color-default: $gray-lightest;
+$border-color-default: rgba(0,0,0,0);
