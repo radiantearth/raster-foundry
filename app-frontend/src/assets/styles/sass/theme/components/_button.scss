@@ -5,6 +5,7 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   border: 0;
+  border-radius: 3px !important;
 
   &.btn-default,
   &.btn-light,
@@ -87,5 +88,15 @@
         background-color: $brand-primary !important;
       }
     }
+  }
+}
+
+.btn, .alert-action {
+  background-color: transparent;
+  background-color: #eee !important;
+  border-color: transparent !important;
+
+  &:hover {
+    color: #959CAC !important;
   }
 }
