@@ -1,0 +1,42 @@
+.modal-title {
+  line-height: 1.25;
+}
+
+.modal-body {
+
+  .panel-body {
+    padding: 0 1em;
+  }
+
+  .row .btn {
+    margin-top: 1em;
+  }
+}
+
+.modal-content {
+  border-radius: 0px !important;
+}
+
+.modal-footer {
+  .btn.pull-left {
+    color: rgba($text-base, 0.5) !important;
+    background: rgba($gray-radiant, 0.05) !important;
+
+    &:hover {
+      background: rgba($gray-radiant, 0.2) !important;
+      color: $text-base !important;
+    }
+  }
+
+  .pull-left {
+    .btn {
+      color: rgba($text-base, 0.5) !important;
+      background: rgba($gray-radiant, 0.05) !important;
+
+      &:hover {
+        background: rgba($gray-radiant, 0.2) !important;
+        color: $text-base !important;
+      }
+    }
+  }
+}

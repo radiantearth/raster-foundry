@@ -1,0 +1,103 @@
+.btn {
+  padding: 1.3rem 3rem;
+  font-family: $font-family-1;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 0;
+  border-radius: 3px !important;
+
+  &.btn-default,
+  &.btn-light,
+  &.btn-toggle,
+  &.dropdown-label,
+  &.pull-lef,
+  &.btn-tiny {
+    color: rgba($text-base, 0.5);
+    background: rgba($gray-radiant, 0.05) !important;
+
+    &:hover {
+      background: rgba($gray-radiant, 0.2) !important;
+      color: $text-base;
+    }
+  }
+
+  &.btn-primary,
+  &.btn-secondary,
+  &.btn-square {
+    background-color: $brand-primary;
+    color: $white !important;
+
+    &:hover {
+      color: $white !important;
+      background-color: $primary-hover;
+    }
+  }
+
+  &.dropdown-toggle {
+    background-color: rgba($brand-primary, .5) !important;
+    color: $white !important;
+
+    &:hover {
+      background-color: $brand-primary !important;
+      color: $white !important;
+    }
+  }
+
+  &:active,
+  &.active,
+  &:focus,
+  &.focus {
+    box-shadow: none !important;
+  }
+}
+
+.navmenu {
+
+}
+
+.panel-off-white {
+  .btn-tiny {
+    background-color: $brand-primary !important;
+    color: $white !important;
+
+    &:hover {
+      color: $white !important;
+      background-color: $primary-hover !important;
+    }
+  }
+}
+
+.btn-group {
+  .dropdown-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+  }
+}
+
+.draw-toolbar-actions .btn {
+  color: $white !important;
+}
+
+.btn-group {
+  &.inline {
+    .btn-primary {
+      background-color: lighten($brand-primary, 10%) !important;
+
+      &.active {
+        background-color: $brand-primary !important;
+      }
+    }
+  }
+}
+
+.btn, .alert-action {
+  background-color: transparent;
+  background-color: #eee !important;
+  border-color: transparent !important;
+
+  &:hover {
+    background-color: darken(#eee, 5%) !important;
+    color: #959CAC !important;
+  }
+}

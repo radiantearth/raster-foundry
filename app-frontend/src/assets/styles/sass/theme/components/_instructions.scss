@@ -1,0 +1,14 @@
+.instructions-container {
+  border-radius: $border-radius-base !important;
+  text-align: left !important;
+  padding-bottom: 20px !important;
+  border-bottom: 1px solid $shade-normal !important;
+
+  h4 {
+    font-size: 26px !important;
+  }
+
+  p {
+    margin-bottom: 5px !important;
+  }
+}

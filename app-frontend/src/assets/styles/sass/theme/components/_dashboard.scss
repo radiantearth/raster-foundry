@@ -1,0 +1,21 @@
+.project-preview {
+
+  .project-preview-container {
+    border-radius: 0;
+  }
+
+  .inline-tag {
+    top: 50px;
+  }
+
+  a.btn-default {
+    color: $white;
+
+    background-color: $brand-primary !important;
+
+    &:hover {
+      background-color: $primary-hover !important;
+      color: $white;
+    }
+  }
+}

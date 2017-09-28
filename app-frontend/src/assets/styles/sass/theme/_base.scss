@@ -1,0 +1,122 @@
+html,
+body {
+  font-family: $font-family-1 !important;
+  font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .page-title, .h4, .h5, .h6 {
+  font-family: $font-family-1 !important;
+}
+
+p a, li a {
+  color: $text-base;
+  text-decoration: none;
+  background-image: linear-gradient(to right, rgba($text-base, 0.1) 10%, rgba($text-base, 0.1) 100%);
+  background-position: 0 1.07em;
+  background-repeat: repeat-x;
+  background-size: 10px 2px;
+}
+
+p {
+  font-family: $font-family-1;
+  font-size: 16px;
+  line-height: 1.88;
+}
+
+.panel-body {
+  padding: 0;
+
+  h4 {
+    margin-bottom: 2rem;
+  }
+}
+
+.container.dashboard {
+  .panel-body {
+    border: 1px solid rgba($gray-radiant, .1);
+    padding: 10px;
+
+    .dropdown-toggle {
+      color: rgba($text-base, 0.5);
+      background: rgba($gray-radiant, 0.05) !important;
+
+      i {
+        color: rgba($text-base, 0.5);
+      }
+
+      &:hover {
+        background: rgba($gray-radiant, 0.2) !important;
+        color: $text-base;
+      }
+    }
+  }
+}
+
+.panel.panel-off-white,
+.aside .aside-footer {
+  background-color: transparent;
+}
+
+.panel[title="Projects & Imports"] {
+  border-bottom: 1px solid rgba($brand-secondary, 0.1);
+  border-radius: 0;
+  margin-bottom: 17px;
+
+  .btn {
+    width: 100%;
+    max-width: 320px;
+
+    &:first-of-type {
+      margin-right: 6px;
+    }
+  }
+}
+
+.cta-content p:not(.pb-25) {
+  margin-top: 7px;
+  margin-bottom: 14px;
+
+  a {
+    font-family: $font-family-1;
+    font-size: 12px;
+    line-height: 1.25;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba($text-base, 0.5) !important;
+  }
+}
+
+div.image-placeholder {
+  width: 100% !important;
+  border-radius: 3px !important;
+  background-color: rgba($shade-light, 0.1);
+}
+
+.aside-filters {
+  border-radius: 3px !important;
+}
+
+.dropdown-my-account {
+  .dropdown-toggle {
+    img {
+      width: 35px !important;
+      height: 35px !important;
+    }
+  }
+}
+
+.dashboard-header {
+  .h3 {
+    i {
+      display: none;
+    }
+  }
+}
+
+.icon-imports {
+  display: none;
+}
+
+.rounded-img {
+  border-radius: 3px !important;
+}
