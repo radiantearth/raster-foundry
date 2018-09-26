@@ -98,7 +98,7 @@
     "no-caller": 2, // disallow use of arguments.caller or arguments.callee
     "no-div-regex": 2, // disallow division operators explicitly at beginning of regular expression (off by default)
     "no-else-return": 2, // disallow else after a return in an if (off by default)
-    "no-eq-null": 2, // disallow comparisons to null without a type-checking operator (off by default)
+    "no-eq-null": 0, // disallow comparisons to null without a type-checking operator (off by default)
     "no-eval": 2, // disallow use of eval()
     "no-extend-native": 2, // disallow adding to native types
     "no-extra-bind": 2, // disallow unnecessary function binding
@@ -155,7 +155,7 @@
     "no-undef": 2, // disallow use of undeclared variables unless mentioned in a /*global */ block
     "no-undef-init": 2, // disallow use of undefined when initializing variables
     "no-undefined": 2, // disallow use of undefined variable (off by default)
-    "no-unused-vars": 2, // disallow declaration of variables that are not used in the code
+    "no-unused-vars": 0, // disallow declaration of variables that are not used in the code
     "no-use-before-define": 2, // disallow use of variables before they are defined
 
     //

@@ -1,19 +1,13 @@
 import projectPlaceholder from '../../../../assets/images/transparent.svg';
 
 export default class ProjectItemController {
-    constructor($scope, $state, $attrs, $log, projectService, mapService, mapUtilsService,
-                authService, $uibModal) {
+    constructor(
+        $rootScope, $scope, $state, $attrs, $log,
+        projectService, mapService, mapUtilsService, authService, modalService,
+        featureFlags
+    ) {
         'ngInject';
-        this.$scope = $scope;
-        this.$state = $state;
-        this.$attrs = $attrs;
-        this.projectService = projectService;
-        this.mapService = mapService;
-        this.mapUtilsService = mapUtilsService;
-        this.authService = authService;
-        this.$uibModal = $uibModal;
-        this.$log = $log;
-
+        $rootScope.autoInject(this, arguments);
         this.projectPlaceholder = projectPlaceholder;
     }
 
@@ -25,12 +19,13 @@ export default class ProjectItemController {
                 this.selectedStatus = selected;
             }
         );
-        this.getMap = () => this.mapService.getMap(`${this.project.id}-map`);
+        this.mapId = `${this.project.id}-map`;
+        this.getMap = () => this.mapService.getMap(this.mapId);
 
-        this.fitProjectExtent();
-        this.addProjectLayer();
+        this.showProjectThumbnail =
+            !this.featureFlags.isOnByDefault('project-preview-mini-map');
+
         this.getProjectStatus();
-        this.getThumbnailURL();
     }
 
     getThumbnailURL() {
@@ -42,11 +37,10 @@ export default class ProjectItemController {
     addProjectLayer() {
         let url = this.projectService.getProjectLayerURL(
             this.project,
-            this.authService.token()
+            {token: this.authService.token()}
         );
 
-        const tileLayerOptions = {maxZoom: 30};
-        let layer = L.tileLayer(url, tileLayerOptions);
+        let layer = L.tileLayer(url);
 
         this.getMap().then(m => {
             m.addLayer('share-layer', layer);
@@ -55,7 +49,7 @@ export default class ProjectItemController {
 
     fitProjectExtent() {
         this.getMap().then(mapWrapper => {
-            this.mapUtilsService.fitMapToProject(mapWrapper, this.project, -150);
+            this.mapUtilsService.fitMapToProject(mapWrapper, this.project, -2);
             mapWrapper.map.invalidateSize();
         });
     }
@@ -69,17 +63,23 @@ export default class ProjectItemController {
         if (!this.statusFetched) {
             this.projectService.getProjectStatus(this.project.id).then(status => {
                 this.status = status;
+                if (this.status === 'CURRENT') {
+                    this.fitProjectExtent();
+                    this.addProjectLayer();
+
+                    if (this.showProjectThumbnail) {
+                        this.getThumbnailURL();
+                    } else {
+                        this.mapOptions = {attributionControl: false};
+                    }
+                }
             });
             this.statusFetched = true;
         }
     }
 
     publishModal() {
-        if (this.activeModal) {
-            this.activeModal.dismiss();
-        }
-
-        this.activeModal = this.$uibModal.open({
+        this.modalService.open({
             component: 'rfProjectPublishModal',
             resolve: {
                 project: () => this.project,
@@ -87,14 +87,24 @@ export default class ProjectItemController {
                 shareUrl: () => this.projectService.getProjectShareURL(this.project)
             }
         });
-
-        return this.activeModal;
     }
+
+    shareModal(project) {
+        this.modalService.open({
+            component: 'rfPermissionModal',
+            size: 'med',
+            resolve: {
+                object: () => project,
+                permissionsBase: () => 'projects',
+                objectType: () => 'PROJECT',
+                objectName: () => project.name,
+                platform: () => this.platform
+            }
+        });
+    }
+
     deleteModal() {
-        if (this.activeModal) {
-            this.activeModal.dismiss();
-        }
-        this.activeModal = this.$uibModal.open({
+        const modal = this.modalService.open({
             component: 'rfConfirmationModal',
             resolve: {
                 title: () => 'Delete Project?',
@@ -102,24 +112,26 @@ export default class ProjectItemController {
                     'The project will be permanently deleted,'
                     + ' but scenes will be unaffected.',
                 content: () =>
-                    '<div class="text-center color-danger">'
-                    + 'You are about to delete the project. This action is not reversible.'
-                    + ' Are you sure you wish to continue?'
+                    '<div class="color-danger">'
+                    + 'You are about to delete the project. '
+                    + 'Annotations, exports, and analyses that use this project '
+                    + 'will not longer be accessible. This action is not reversible. '
+                    + 'Are you sure you wish to continue?'
                     + '</div>',
                 confirmText: () => 'Delete Project',
                 cancelText: () => 'Cancel'
             }
         });
-        this.activeModal.result.then(
-            () => {
-                this.projectService.deleteProject(this.project.id).then(
-                    () => {
-                        this.$state.reload();
-                    },
-                    (err) => {
-                        this.$log.debug('error deleting project', err);
-                    }
-                );
-            });
+
+        modal.result.then(() => {
+            this.projectService.deleteProject(this.project.id).then(
+                () => {
+                    this.$state.reload();
+                },
+                (err) => {
+                    this.$log.debug('error deleting project', err);
+                }
+            );
+        });
     }
 }

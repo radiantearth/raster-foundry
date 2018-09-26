@@ -3,95 +3,78 @@ package com.azavea.rf.api.uploads
 import java.sql.Timestamp
 import java.util.{Date, UUID}
 
-import com.azavea.rf.api.utils.{Auth0Exception, Config}
-import com.azavea.rf.datamodel.User
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.amazonaws.auth.{AWSCredentials, AWSSessionCredentials, AWSStaticCredentialsProvider}
+import com.amazonaws.auth.{
+  AWSCredentials,
+  AWSSessionCredentials,
+  AWSStaticCredentialsProvider
+}
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder
+import com.amazonaws.services.securitytoken.model.AssumeRoleWithWebIdentityRequest
+import com.azavea.rf.api.utils.Config
+import com.azavea.rf.datamodel.User
 import com.typesafe.scalalogging.LazyLogging
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import io.circe.generic.JsonCodec
-import io.circe.optics.JsonPath._
-import io.circe.Json
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
-
-
 @JsonCodec
-case class Credentials (
-  AccessKeyId: String,
-  Expiration: String,
-  SecretAccessKey: String,
-  SessionToken: String
-) extends AWSCredentials with AWSSessionCredentials {
+final case class Credentials(
+    AccessKeyId: String,
+    Expiration: String,
+    SecretAccessKey: String,
+    SessionToken: String
+) extends AWSCredentials
+    with AWSSessionCredentials {
   override def getAWSAccessKeyId = this.AccessKeyId
   override def getAWSSecretKey = this.SecretAccessKey
   override def getSessionToken = this.SessionToken
 }
 
 @JsonCodec
-case class CredentialsWithBucketPath (
-  credentials: Credentials,
-  bucketPath: String
+final case class CredentialsWithBucketPath(
+    credentials: Credentials,
+    bucketPath: String
 )
 
-object Auth0DelegationService extends Config with LazyLogging {
-  import com.azavea.rf.api.AkkaSystem._
+object CredentialsService extends Config with LazyLogging {
 
-  val uri = Uri(s"https://$auth0Domain/delegation")
-
-  // The AWS Delegation response has many things, most of which we don't care
-  // about. We only want the "Credentials" key, so we setup this path to
-  // optionally retrieve it from Json response.
-  private val credentialsPath = root.Credentials.as[Credentials]
-
-  def getCredentials(user: User, uploadId: UUID, jwt: String): Future[CredentialsWithBucketPath] = {
-    val params = FormData(
-      "api-type" -> "aws",
-      "client_id" -> auth0ClientId,
-      "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      "id_token" -> jwt,
-      "target" -> auth0ClientId
-    ).toEntity
+  def getCredentials(user: User,
+                     uploadId: UUID,
+                     jwt: String): CredentialsWithBucketPath = {
     val path = s"user-uploads/${user.id}/${uploadId.toString}"
+    val stsClient = AWSSecurityTokenServiceClientBuilder.defaultClient
+    val stsRequest = new AssumeRoleWithWebIdentityRequest
 
-    Http()
-      .singleRequest(HttpRequest(
-        method = HttpMethods.POST,
-        uri = uri,
-        entity = params
-      ))
-      .flatMap {
-        case HttpResponse(StatusCodes.OK, _, entity, _) =>
-          Unmarshal(entity).to[Json].map(credentialsPath.getOption).map {
-            case Some(credentials) => {
-              val s3 = AmazonS3ClientBuilder.standard
-                         .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                         .withRegion(region)
-                         .build()
+    stsRequest.setRoleArn(scopedUploadRoleArn)
+    stsRequest.setRoleSessionName(s"upload${uploadId}")
+    stsRequest.setWebIdentityToken(jwt)
+    // Sessions for AWS account owners are restricted to a maximum of 3600 seconds. Longer durations seemed to give 501.
+    // https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/securitytoken/model/GetSessionTokenRequest.html
+    stsRequest.setDurationSeconds(3600)
 
-              // Add timestamp object to test credentials
-              val now = new Timestamp(new Date().getTime)
-              s3.putObject(
-                dataBucket,
-                s"${path}/RFUploadAccessTestFile",
-                s"Allow Upload Access for RF: ${path} at ${now.toString}"
-              )
+    val stsCredentials =
+      stsClient.assumeRoleWithWebIdentity(stsRequest).getCredentials
 
-              val bucketUrl = s3.getUrl(dataBucket, path)
+    val credentials = Credentials(
+      stsCredentials.getAccessKeyId,
+      stsCredentials.getExpiration.toString,
+      stsCredentials.getSecretAccessKey,
+      stsCredentials.getSessionToken
+    )
 
-              CredentialsWithBucketPath(credentials, bucketUrl.toString)
-            }
-            case None => throw new Auth0Exception(
-              StatusCodes.InternalServerError,
-              "Missing credentials in AWS STS delegation response"
-            )
-          }
-        case HttpResponse(errCode, _, err, _) =>
-          throw new Auth0Exception(errCode, err.toString)
-      }
+    val s3 = AmazonS3ClientBuilder.standard
+      .withCredentials(new AWSStaticCredentialsProvider(credentials))
+      .withRegion(region)
+      .build()
+
+    // Add timestamp object to test credentials
+    val now = new Timestamp(new Date().getTime)
+    s3.putObject(
+      dataBucket,
+      s"${path}/RFUploadAccessTestFile",
+      s"Allow Upload Access for RF: ${path} at ${now.toString}"
+    )
+
+    val bucketUrl = s3.getUrl(dataBucket, path)
+
+    CredentialsWithBucketPath(credentials, bucketUrl.toString)
   }
 }

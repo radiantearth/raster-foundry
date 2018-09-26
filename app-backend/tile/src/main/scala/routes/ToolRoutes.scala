@@ -1,36 +1,64 @@
 package com.azavea.rf.tile.routes
 
-import java.util.UUID
-
-import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes, StatusCodes}
-import akka.http.scaladsl.server._
-import cats.data.Validated._
-import cats.data._
-import cats.implicits._
+import com.azavea.rf.authentication.Authentication
 import com.azavea.rf.common._
 import com.azavea.rf.common.ast._
-import com.azavea.rf.database.Database
 import com.azavea.rf.datamodel.User
 import com.azavea.rf.tile._
+import com.azavea.rf.tile.image._
+import com.azavea.rf.tile.tool._
 import com.azavea.rf.tool.ast._
 import com.azavea.rf.tool.eval._
-import com.azavea.rf.tool.params._
+import com.azavea.rf.tool.maml._
+import com.azavea.rf.database.util.RFTransactor
+
+import com.azavea.maml.ast._
+import com.azavea.maml.eval._
+import com.azavea.maml.eval.directive._
+import com.azavea.maml.util._
 import com.typesafe.scalalogging.LazyLogging
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
+import geotrellis.proj4._
 import geotrellis.raster._
 import geotrellis.raster.render._
+import geotrellis.raster.render.png._
+import geotrellis.raster.io.geotiff.SinglebandGeoTiff
+import geotrellis.vector.{Extent, Projected}
+import akka.http.scaladsl.marshalling._
+import akka.http.scaladsl.model.{
+  ContentType,
+  HttpEntity,
+  MediaTypes,
+  StatusCodes,
+  HttpResponse
+}
+import akka.http.scaladsl.server._
+import cats.data.Validated._
+import cats.data.{NonEmptyList => NEL, _}
+import cats.implicits._
+import doobie._
+import doobie.implicits._
+import doobie.postgres._
+import doobie.postgres.implicits._
+import cats.effect.IO
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
+import java.util.UUID
 
-class ToolRoutes(implicit val database: Database) extends Authentication
-  with LazyLogging
-  with InterpreterExceptionHandling
-  with CommonHandlers
-  with KamonTraceDirectives {
+import com.azavea.rf.common.cache.CacheClient
+import com.azavea.rf.common.cache.kryo.KryoMemcachedClient
 
-  val userId: String = "rf_airflow-user"
+class ToolRoutes
+    extends Authentication
+    with LazyLogging
+    with CommonHandlers
+    with KamonTraceDirectives {
+
+  implicit lazy val xa = RFTransactor.xa
+
+  lazy val memcachedClient = KryoMemcachedClient.default
+  val rfCache = new CacheClient(memcachedClient)
 
   val providedRamps = Map(
     "viridis" -> geotrellis.raster.render.ColorRamps.Viridis,
@@ -42,14 +70,19 @@ class ToolRoutes(implicit val database: Database) extends Authentication
 
   implicit val pngMarshaller: ToEntityMarshaller[Png] = {
     val contentType = ContentType(MediaTypes.`image/png`)
-    Marshaller.withFixedContentType(contentType) { png ⇒ HttpEntity(contentType, png.bytes) }
+    Marshaller.withFixedContentType(contentType) { png ⇒
+      HttpEntity(contentType, png.bytes)
+    }
   }
 
-  def parseBreakMap(str: String): Map[Double,Double] = {
-    str.split(';').map { c: String =>
-      val Array(a, b) = c.trim.split(':').map(_.toDouble)
-      (a, b)
-    }.toMap
+  def parseBreakMap(str: String): Map[Double, Double] = {
+    str
+      .split(';')
+      .map { c: String =>
+        val Array(a, b) = c.trim.split(':').map(_.toDouble)
+        (a, b)
+      }
+      .toMap
   }
 
   /** Endpoint to be used for kicking the histogram cache and ensuring tiles are quickly loaded */
@@ -60,7 +93,10 @@ class ToolRoutes(implicit val database: Database) extends Authentication
         'voidCache.as[Boolean].?(false)
       ) { (node, void) =>
         val nodeId = node.map(UUID.fromString(_))
-        onSuccess(LayerCache.toolEvalRequirements(toolRunId, nodeId, user, void).value) { _ =>
+        onSuccess(
+          LayerCache
+            .toolEvalRequirements(toolRunId, nodeId, user, void)
+            .value) { _ =>
           complete {
             StatusCodes.NoContent
           }
@@ -75,7 +111,12 @@ class ToolRoutes(implicit val database: Database) extends Authentication
   def validate(toolRunId: UUID, user: User) = {
     traceName("toolrun-validate") {
       pathPrefix("validate") {
-        complete(validateAST[Unit](toolRunId, user))
+        complete {
+          for {
+            (_, ast) <- LayerCache.toolEvalRequirements(toolRunId, None, user)
+          } yield validateTreeWithSources[Unit](ast)
+          StatusCodes.NoContent
+        }
       }
     }
   }
@@ -90,7 +131,9 @@ class ToolRoutes(implicit val database: Database) extends Authentication
         ) { (node, void) =>
           complete {
             val nodeId = node.map(UUID.fromString(_))
-            LayerCache.modelLayerGlobalHistogram(toolRunId, nodeId, user, void).value
+            LayerCache
+              .modelLayerGlobalHistogram(toolRunId, nodeId, user, void)
+              .value
           }
         }
       }
@@ -107,46 +150,179 @@ class ToolRoutes(implicit val database: Database) extends Authentication
         ) { (node, void) =>
           complete {
             val nodeId = node.map(UUID.fromString(_))
-            LayerCache.modelLayerGlobalHistogram(toolRunId, nodeId, user, void).mapFilter(_.statistics).value
+            LayerCache
+              .modelLayerGlobalHistogram(toolRunId, nodeId, user, void)
+              .mapFilter(_.statistics)
+              .value
           }
         }
       }
     }
   }
 
+  val tileResolver =
+    new TileResolver(implicitly[Transactor[IO]], implicitly[ExecutionContext])
+  val tmsInterpreter = BufferingInterpreter.DEFAULT
+  val emptyPng =
+    IntConstantNoDataArrayTile(Array(0), 1, 1).renderPng(RgbaPngEncoding)
+  val emptyTile = IntConstantNoDataArrayTile(Array(0), 1, 1)
 
   /** The central endpoint for ModelLab; serves TMS tiles given a [[ToolRun]] specification */
   def tms(
-    toolRunId: UUID, user: User,
-    source: (RFMLRaster, Boolean, Int, Int, Int) => Future[Option[TileWithNeighbors]]
+      toolRunId: UUID,
+      user: User
   ): Route =
-    (handleExceptions(interpreterExceptionHandler) & handleExceptions(circeDecodingError)) {
+    handleExceptions(circeDecodingError) {
       traceName("toolrun-tms") {
         pathPrefix(IntNumber / IntNumber / IntNumber) { (z, x, y) =>
           parameter(
             'node.?,
             'cramp.?("viridis")
           ) { (node, colorRampName) =>
+            val nodeId = node.map(UUID.fromString(_))
+            val colorRamp =
+              providedRamps.getOrElse(colorRampName, providedRamps("viridis"))
+            val components = for {
+              (lastUpdateTime, ast) <- LayerCache.toolEvalRequirements(
+                toolRunId,
+                nodeId,
+                user)
+              (updatedAst) <- OptionT(RelabelAst.cogScenes(ast))
+              (expression, metadata) <- OptionT.pure[Future](updatedAst.asMaml)
+              cMap <- LayerCache.toolRunColorMap(toolRunId,
+                                                 nodeId,
+                                                 user,
+                                                 colorRamp,
+                                                 colorRampName)
+            } yield (expression, metadata, cMap, lastUpdateTime)
+
             complete {
-              val nodeId = node.map(UUID.fromString(_))
-              val colorRamp = providedRamps.get(colorRampName).getOrElse(providedRamps("viridis"))
-              val responsePng = for {
-                (toolRun, tool) <- LayerCache.toolAndToolRun(toolRunId, user)
-                (ast, params)   <- LayerCache.toolEvalRequirements(toolRunId, nodeId, user)
-                tile            <- OptionT({
-                  val tms = Interpreter.interpretTMS(ast, params.sources, params.overrides, source, 256)
-                  logger.debug(s"Attempting to retrieve TMS tile at $z/$x/$y")
-                  tms(z, x, y).map {
-                    case Valid(op) => op.evaluateDouble
-                    case Invalid(errors) => throw InterpreterException(errors)
-                  }
-                })
-                cMap            <- LayerCache.toolRunColorMap(toolRunId, nodeId, user, colorRamp, colorRampName)
-              } yield {
-                logger.debug(s"Tile successfully produced at $z/$x/$y")
-                tile.renderPng(cMap)
-              }
-              responsePng.value
+              components.value.flatMap({ data =>
+                val result: Future[Option[Png]] = data match {
+                  case Some((expression, metadata, cMap, updateTime)) =>
+                    val cacheKey = s"toolrun-tms-${toolRunId}-${nodeId
+                      .getOrElse("")}-$z-$x-$y-${updateTime.getTime}"
+                    rfCache
+                      .cachingOptionT(cacheKey)({
+                        val literalTree =
+                          tileResolver.resolveBuffered(expression)(z, x, y)
+                        val interpretedTile: Future[Interpreted[Tile]] =
+                          literalTree.map({ resolvedAst =>
+                            resolvedAst
+                              .andThen({ tmsInterpreter(_) })
+                              .andThen({ _.as[Tile] })
+                          })
+                        OptionT({
+                          interpretedTile.map({
+                            case Valid(tile) =>
+                              logger.debug(
+                                s"Tile successfully produced at $z/$x/$y")
+                              metadata
+                                .flatMap({ md =>
+                                  md.renderDef.map({ renderDef =>
+                                    tile.renderPng(renderDef)
+                                  })
+                                })
+                                .orElse({
+                                  Some(tile.renderPng(cMap))
+                                })
+                            case Invalid(nel) =>
+                              // We'll remove tile retrieval errors and return an empty tile
+                              val exceptions = nel.filter({ e =>
+                                e match {
+                                  case S3TileResolutionError(_, _)      => false
+                                  case UnknownTileResolutionError(_, _) => false
+                                  case _                                => true
+                                }
+                              })
+                              NEL.fromList(exceptions) match {
+                                case Some(errors) =>
+                                  throw new InterpreterException(errors)
+                                case None =>
+                                  Some(emptyPng)
+                              }
+                          })
+                        })
+                      })
+                      .value
+                  case _ => Future.successful(None)
+                }
+                result
+              })
+            }
+          }
+        }
+      }
+    }
+
+  def raw(
+      toolRunId: UUID,
+      user: User
+  ): Route =
+    handleExceptions(circeDecodingError) {
+      traceName("analysis-raw") {
+        pathPrefix("raw") {
+          parameter("bbox", "zoom".as[Int], "node".?) { (bbox, zoom, node) =>
+            val nodeId = node.map(UUID.fromString(_))
+            val components = for {
+              (lastUpdateTime, ast) <- LayerCache.toolEvalRequirements(
+                toolRunId,
+                nodeId,
+                user)
+              (expression, metadata) <- OptionT.pure[Future](ast.asMaml)
+            } yield (expression, metadata, lastUpdateTime)
+            complete {
+              components.value.flatMap({ data =>
+                val result: Future[Option[HttpResponse]] = data match {
+                  case Some((expression, metadata, updateTime)) =>
+                    val extent = Projected(
+                      Extent.fromString(bbox).toPolygon,
+                      4326
+                    ).reproject(LatLng, WebMercator)(3857).envelope
+                    val literalTree =
+                      tileResolver.resolveForExtent(expression, zoom, extent)
+                    val interpretedTile: Future[Interpreted[Tile]] =
+                      literalTree.map({ resolvedAst =>
+                        resolvedAst
+                          .andThen({ tmsInterpreter(_) })
+                          .andThen({ _.as[Tile] })
+                      })
+                    interpretedTile.map({
+                      case Valid(tile: Tile) =>
+                        logger.debug(
+                          s"Tile successfully produced at $zoom, $extent")
+                        val tiff = SinglebandGeoTiff(tile, extent, WebMercator)
+                        Some(
+                          HttpResponse(entity =
+                            HttpEntity(ContentType(MediaTypes.`image/tiff`),
+                                       tiff.toByteArray)))
+                      case Invalid(nel) =>
+                        // We'll remove tile retrieval errors and return an empty tile
+                        val exceptions = nel.filter(
+                          { e =>
+                            e match {
+                              case S3TileResolutionError(_, _)      => false
+                              case UnknownTileResolutionError(_, _) => false
+                              case _                                => true
+                            }
+                          }
+                        )
+                        NEL.fromList(exceptions) match {
+                          case Some(errors) =>
+                            throw new InterpreterException(errors)
+                          case None =>
+                            val tiff =
+                              SinglebandGeoTiff(emptyTile, extent, WebMercator)
+                            Some(
+                              HttpResponse(entity =
+                                HttpEntity(ContentType(MediaTypes.`image/tiff`),
+                                           tiff.toByteArray)))
+                        }
+                    })
+                  case _ => Future.successful(None)
+                }
+                result
+              })
             }
           }
         }

@@ -2,18 +2,23 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Raster Foundry</title>
+    <title></title>
     <base href="/">
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,600,700|Titillium+Web:400,600,700" rel="stylesheet">
-    <link rel="shortcut icon" href="favicon.ico?" type="image/x-icon">
-    {% for (var css in o.htmlWebpackPlugin.files.css) { %}
-    <link href="{%=o.htmlWebpackPlugin.files.css[css] %}" rel="stylesheet">
-    {% } %}
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/favicons/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicons/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/favicons/manifest.json">
+    <link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#464f77">
+    <link rel="shortcut icon" href="/favicons/favicon.ico">
+    <meta name="msapplication-config" content="/favicons/browserconfig.xml">
+    <meta name="theme-color" content="#464f77">
 
     {% for (var chunk in o.htmlWebpackPlugin.files.chunks) { %}
-    <script src="{%=o.htmlWebpackPlugin.files.chunks[chunk].entry %}" defer></script>
+      <script src="{%=o.htmlWebpackPlugin.files.chunks[chunk].entry %}" defer></script>
     {% } %}
 
     {% if (!o.htmlWebpackPlugin.options.development) { %}
@@ -24,11 +29,32 @@
     {% } %}
 </head>
 <body>
+    <style>
+      div.app-loading-indicator {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: rgba(255, 255, 255, 0.50);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      div.app-loading-indicator.is-visible {
+        opacity: 1;
+        pointer-events: all;
+      }
+    </style>
     <!--[if lt IE 10]>
     <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
-  <div class="app-wrapper">
-    <div ui-view></div>
-  </div>
+    <div class="app-wrapper">
+      <div ui-view></div>
+    </div>
+
+    {% for (var css in o.htmlWebpackPlugin.files.css) { %}
+      <link href="{%=o.htmlWebpackPlugin.files.css[css] %}" rel="stylesheet">
+    {% } %}
 </body>
 </html>

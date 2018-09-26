@@ -1,12 +1,15 @@
+/* global BUILDCONFIG */
+
 export default class ProjectCreateModalController {
-    constructor($state, projectService, $uibModal) {
+    constructor($state, projectService, modalService) {
         'ngInject';
         this.$state = $state;
         this.projectService = projectService;
-        this.$uibModal = $uibModal;
+        this.modalService = modalService;
     }
 
     $onInit() {
+        this.BUILDCONFIG = BUILDCONFIG;
         this.steps = [
             'TYPE',
             'ADD_SCENES'
@@ -96,20 +99,17 @@ export default class ProjectCreateModalController {
     }
 
     startImport() {
-        if (this.activeModal) {
-            this.activeModal.dismiss();
-        }
-
-        this.activeModal = this.$uibModal.open({
-            component: 'rfSceneImportModal',
-            resolve: {
-                project: () => this.project
-            }
-        });
-
         this.closeWithData();
 
-        return this.activeModal;
+        this.modalService.open({
+            component: 'rfSceneImportModal',
+            backdrop: 'static',
+            keyboard: false,
+            resolve: {
+                project: () => this.project,
+                origin: () => 'projectCreate'
+            }
+        });
     }
 
     createProject() {

@@ -1,26 +1,38 @@
 package com.azavea.rf.tile
 
-import java.util.UUID
-
-import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directive1, Directives}
-import com.azavea.rf.common.Authentication
+import com.azavea.rf.authentication.Authentication
 import com.azavea.rf.common.cache.CacheClient
 import com.azavea.rf.common.cache.kryo.KryoMemcachedClient
-import com.azavea.rf.database.ActionRunner
-import com.azavea.rf.database.tables.{MapTokens, Projects, Users}
-import com.azavea.rf.datamodel.User
+import com.azavea.rf.database.Implicits._
+import com.azavea.rf.database.{MapTokenDao, ProjectDao, UserDao}
+import com.azavea.rf.datamodel.{User, Visibility}
+import com.azavea.rf.database.util.RFTransactor
 
+import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
+import akka.http.scaladsl.server.{
+  AuthenticationFailedRejection,
+  Directive1,
+  Directives
+}
+import doobie.util.transactor.Transactor
+import doobie._
+import doobie.implicits._
+import doobie.postgres._
+import doobie.postgres.implicits._
+import cats.effect.IO
 import scala.util.Try
 
-trait TileAuthentication extends Authentication
-  with Directives
-  with ActionRunner {
+import java.util.UUID
+
+trait TileAuthentication extends Authentication with Directives {
+
+  implicit def xa: Transactor[IO]
 
   // Default auth setting to true
-  private val tileAuthSetting: String = sys.env.getOrElse("RF_TILE_AUTH_REQUIRED", "true")
+  private val tileAuthSetting: String =
+    sys.env.getOrElse("RF_TILE_AUTH_REQUIRED", "true")
 
-  lazy val memcachedClient = KryoMemcachedClient.DEFAULT
+  lazy val memcachedClient = KryoMemcachedClient.default
   val rfCache = new CacheClient(memcachedClient)
 
   /** Check optional tile authentication
@@ -34,7 +46,7 @@ trait TileAuthentication extends Authentication
     val requireAuth = Try(tileAuthSetting.toBoolean).getOrElse(true)
 
     if (requireAuth) {
-      validateTokenParameter.flatMap {
+      authenticateWithParameter.flatMap {
         case _ => provide(true)
       }
     } else {
@@ -43,53 +55,76 @@ trait TileAuthentication extends Authentication
   }
 
   def isProjectPublic(id: UUID): Directive1[Boolean] =
-    onSuccess(Projects.getPublicProject(id)).flatMap {
+    onSuccess(
+      ProjectDao.query
+        .filter(id)
+        .filter(fr"tile_visibility=${Visibility.Public.toString}::visibility")
+        .selectOption
+        .transact(xa)
+        .unsafeToFuture
+    ).flatMap {
       case Some(_) => provide(true)
-      case _ => provide(false)
+      case _       => provide(false)
     }
 
   def isProjectMapTokenValid(projectId: UUID): Directive1[Boolean] = {
     parameter('mapToken).flatMap { mapToken =>
       val mapTokenId = UUID.fromString(mapToken)
 
-      val doesTokenExist = rfCache.caching(s"project-$projectId-token-$mapToken", 300) {
-        readOneDirect(MapTokens.validateMapToken(projectId, mapTokenId))
-      }
+      val doesTokenExist =
+        rfCache.caching(s"project-$projectId-token-$mapToken") {
+          MapTokenDao.query
+            .filter(mapTokenId)
+            .filter(fr"project_id=${projectId}")
+            .selectOption
+            .transact(xa)
+            .unsafeToFuture
+        }
 
       onSuccess(doesTokenExist).flatMap {
-        case 1 => provide(true)
-        case _ => provide(false)
+        case Some(_) => provide(true)
+        case _       => provide(false)
       }
     }
   }
 
   def authenticateToolTileRoutes(toolRunId: UUID): Directive1[User] = {
     parameters('mapToken.?, 'token.?).tflatMap {
-      case (Some(mapToken), _) => validateMapTokenParameters(toolRunId, mapToken)
+      case (Some(mapToken), _) =>
+        validateMapTokenParameters(toolRunId, mapToken)
       case (_, Some(token)) => authenticateWithToken(token)
-      case (_, _) => reject(AuthenticationFailedRejection(CredentialsRejected, challenge))
+      case (_, _) =>
+        reject(AuthenticationFailedRejection(CredentialsRejected, challenge))
     }
   }
 
-  def validateMapTokenParameters(toolRunId: UUID, mapToken: String): Directive1[User] = {
+  def validateMapTokenParameters(toolRunId: UUID,
+                                 mapToken: String): Directive1[User] = {
     val mapTokenId = UUID.fromString(mapToken)
-    val mapTokenQuery = rfCache.caching(s"mapToken-$mapTokenId-toolRunId-$toolRunId", 600) {
-      database.db.run {
-        MapTokens.getMapTokenForTool(mapTokenId, toolRunId)
+    val mapTokenQuery =
+      rfCache.caching(s"mapToken-$mapTokenId-toolRunId-$toolRunId") {
+        MapTokenDao.query
+          .filter(mapTokenId)
+          .filter(fr"toolrun_id=${toolRunId}")
+          .selectOption
+          .transact(xa)
+          .unsafeToFuture
       }
-    }
     onSuccess(mapTokenQuery).flatMap {
       case Some(token) => {
         val userId = token.owner.toString
-        val userFromId = rfCache.caching(s"user-$userId-token-$mapToken", 600) {
-          Users.getUserById(userId)
+        val userFromId = rfCache.caching(s"user-$userId-token-$mapToken") {
+          UserDao.getUserById(userId).transact(xa).unsafeToFuture
         }
         onSuccess(userFromId).flatMap {
           case Some(user) => provide(user)
-          case _ => reject(AuthenticationFailedRejection(CredentialsRejected, challenge))
+          case _ =>
+            reject(
+              AuthenticationFailedRejection(CredentialsRejected, challenge))
         }
       }
-      case _ => reject(AuthenticationFailedRejection(CredentialsRejected, challenge))
+      case _ =>
+        reject(AuthenticationFailedRejection(CredentialsRejected, challenge))
     }
   }
 
@@ -107,5 +142,6 @@ trait TileAuthentication extends Authentication
     * This order guarantees that at most one database call is made in every case.
     */
   def projectTileAccessAuthorized(projectId: UUID): Directive1[Boolean] =
-    isTokenParameterValid | isProjectMapTokenValid(projectId) | isProjectPublic(projectId)
+    tileAuthenticateOption | isProjectMapTokenValid(projectId) | isProjectPublic(
+      projectId)
 }

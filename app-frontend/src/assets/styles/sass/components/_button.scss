@@ -1,8 +1,10 @@
-@mixin button-states($color) {
+@mixin button-states($color, $textColor) {
   &:hover, &.hover,
-  &:active, &.active, {
+  &:active, &.active {
+    color: $textColor;
     background-color: darken($color, 5%);
     border-color: darken($color, 5%);
+    z-index: 1;
   }
 
   &:active, &.active {
@@ -11,7 +13,8 @@
 
   &:focus, &.focus {
     outline: none;
-    box-shadow: 0 1px 2px -1px $brand-primary;
+    box-shadow: 0 0 0 3px rgba($brand-primary, .3);
+    z-index: 1;
   }
 
   // Note: <buttons> and <a> handle active+focus differently. This will normalize behaviour.
@@ -31,6 +34,7 @@
     color: $textColor;
     background-color: rgba($color, .25);
     border-color: darken($color, 5%);
+    z-index: 1;
   }
 
   &:active, &.active {
@@ -39,7 +43,8 @@
 
   &:focus, &.focus {
     outline: none;
-    box-shadow: 0 1px 2px -1px $brand-primary;
+    box-shadow: 0 0 0 3px rgba($brand-primary, .3);
+    z-index: 1;
   }
 
   // Note: <buttons> and <a> handle active+focus differently. This will normalize behaviour.
@@ -68,12 +73,14 @@
   user-select: none;
   background: #fff;
   border: 1px solid $shade-light;
-  color: $shade-light;;
+  color: $shade-light;
+  will-change: opacity, border;
 
   &:hover, &.hover,
   &:active, &.active, {
     color: #fff;
     background-color: lighten($shade-light, 10%);
+    z-index: 1;
   }
 
   &:active, &.active {
@@ -82,7 +89,8 @@
 
   &:focus, &.focus {
     outline: none;
-    box-shadow: 0 1px 2px -1px $brand-primary;
+    box-shadow: 0 0 0 3px rgba($brand-primary, .3);
+    z-index: 1;
   }
 
   // Note: <buttons> and <a> handle active+focus differently. This will normalize behaviour.
@@ -96,7 +104,7 @@
   }
 }
 
-/* 
+/*
  * Solid bg-color buttons
  */
 .btn-default {
@@ -104,7 +112,7 @@
   border-color: darken($shade-normal, 5%);
   color: #fff;
 
-  @include button-states($shade-normal);
+  @include button-states($shade-normal, $white);
 }
 
 .btn-light {
@@ -112,7 +120,7 @@
   border-color: darken($shade-light, 5%);
   color: #fff;
 
-  @include button-states($shade-light);
+  @include button-states($shade-light, $white);
 }
 
 .btn-primary {
@@ -120,7 +128,7 @@
   border-color: darken($brand-primary, 5%);
   color: #fff;
 
-  @include button-states($brand-primary);
+  @include button-states($brand-primary, $white);
 }
 
 .btn-secondary {
@@ -128,7 +136,7 @@
   border-color: darken($brand-secondary, 5%);
   color: #fff;
 
-  @include button-states($brand-secondary);
+  @include button-states($brand-secondary, $white);
 }
 
 .btn-tertiary {
@@ -136,7 +144,7 @@
   border-color: darken($brand-tertiary, 5%);
   color: #fff;
 
-  @include button-states($brand-tertiary);
+  @include button-states($brand-tertiary, $white);
 }
 
 .btn-warning {
@@ -144,7 +152,7 @@
   border-color: darken($warning, 5%);
   color: #fff;
 
-  @include button-states($warning);
+  @include button-states($warning, $white);
 }
 
 .btn-danger {
@@ -152,7 +160,7 @@
   border-color: darken($danger, 5%);
   color: #fff;
 
-  @include button-states($danger);
+  @include button-states($danger, $white);
 }
 
 .btn-transparent {
@@ -160,11 +168,13 @@
   border-color: transparent;
 }
 
-/* 
+/*
  * Ghost buttons, borders only
  */
 .btn-ghost {
   background-color: transparent;
+
+  @include ghost-button-states(transparent, $white);
 }
 
 .btn-ghost-white {
@@ -183,7 +193,15 @@
   @include ghost-button-states($shade-normal, #fff);
 }
 
-/* 
+.btn-ghost-danger {
+  background-color: transparent;
+  color: $danger;
+  border-color: $danger;
+
+  @include ghost-button-states($danger, $shade-normal);
+}
+
+/*
  * Button styled link a link
  */
 .btn-link {
@@ -232,7 +250,9 @@
 }
 
 .btn-square {
-  padding: 1rem;
+  width: 40px;
+  height: 40px;
+  padding: 0;
 }
 
 .btn-block {
@@ -261,6 +281,7 @@
   &:focus, &.focus {
     outline: none;
     box-shadow: 0 1px 2px -1px $brand-primary;
+    z-index: 1;
   }
 
   // Note: <buttons> and <a> handle active+focus differently. This will normalize behaviour.
@@ -268,8 +289,9 @@
     box-shadow: inset 0 2px 2px 0px rgba(black, .2);
   }
 
-  &:disabled, &.disabled {
+  &:disabled, &.disabled, &[disabled] {
     opacity: .5;
+    cursor: not-allowed;
   }
 
   &.active {
@@ -296,6 +318,10 @@
  */
 .btn-group {
   display: flex !important;
+  &.no-grow {
+      display: block !important;
+  }
+
 
   .btn {
     margin: 0 !important;
@@ -333,5 +359,38 @@
     padding-right: 1rem;
     flex-grow: 0;
     flex-shrink: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
   }
+}
+
+.btn-dropdown-transitional {
+  text-align: left;
+  position: relative;
+  padding-left: 8px;
+  width: 100%;
+
+  .icon-caret-down {
+    position: absolute;
+    right: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+/*
+Copy button on project share modal
+*/
+.btn-copy-modal {
+  width: 100px;
+  height: 38px;
+}
+
+.btn-copy-modal-first {
+  width: 73.92px;
+  height: 38px;
+}
+
+.btn-nowrap {
+  white-space: nowrap;
 }

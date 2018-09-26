@@ -1,74 +1,70 @@
+/* global BUILDCONFIG */
+
 class DatasourceListController {
-    constructor($state, datasourceService) {
+    constructor(
+        $scope, $state, $stateParams, $filter,
+        datasourceService, modalService, paginationService
+    ) {
         'ngInject';
-        this.$state = $state;
-        this.datasourceService = datasourceService;
+        $scope.autoInject(this, arguments);
+        this.pageSize = 10;
     }
 
     $onInit() {
-        this.datasources = {};
-        this.currentPage = 1;
-        this.pageSize = 10;
-        this.loadDatasources();
-    }
-
-    $onDestroy() {
-
+        this.BUILDCONFIG = BUILDCONFIG;
+        this.fetchPage();
     }
 
     shouldShowPlaceholder() {
-        return !this.isLoadingDatasources &&
-            this.datasources.count &&
-            this.datasources.count === 0;
+        return !this.currentQuery &&
+            !this.fetchError &&
+            (!this.search || !this.search.length) &&
+            this.datasources &&
+            this.datasources.length === 0;
     }
 
-    shouldShowList() {
-        return !this.isLoadingDatasources &&
-            this.datasources.count &&
-            this.datasources.count > 0;
+    shouldShowEmptySearch() {
+        return !this.currentQuery &&
+            !this.fetchError &&
+            this.search && this.search.length &&
+            this.datasources && !this.datasources.length;
     }
 
-    shouldShowPagination() {
-        return !this.isLoadingDatasources &&
-            !this.isErrorLoadingDatasources &&
-            this.datasources.count &&
-            this.datasources.count > this.pageSize;
-    }
-
-    updateQueryParameters() {
-        const replace = !this.$state.params.page;
-        this.$state.transitionTo(
-            this.$state.$current.name,
-            {
-                page: this.currentPage
-            },
-            {
-                location: replace ? 'replace' : true,
-                notify: false
-            }
-        );
-    }
-
-    loadDatasources(page = 1) {
-        this.isLoadingDatasources = true;
-        this.isErrorLoadingDatasources = false;
-        this.datasourceService.query({
+    fetchPage(page = this.$state.params.page || 1, search = this.$state.params.search) {
+        this.search = search && search.length ? search : null;
+        delete this.fetchError;
+        this.datasources = [];
+        let currentQuery = this.datasourceService.query({
             sort: 'createdAt,desc',
             pageSize: this.pageSize,
-            page: page - 1
-        }).then(
-            datasourceResponse => {
-                this.datasources = datasourceResponse;
-                this.currentPage = datasourceResponse.page + 1;
-                this.updateQueryParameters();
-            },
-            () => {
-                this.isErrorLoadingDatasources = true;
-            })
-            .finally(() => {
-                this.isLoadingDatasources = false;
+            page: page - 1,
+            search: this.search
+        }).then(paginatedResponse => {
+            this.datasources = paginatedResponse.results;
+            this.pagination = this.paginationService.buildPagination(paginatedResponse);
+            this.paginationService.updatePageParam(page, this.search);
+            if (this.currentQuery === currentQuery) {
+                delete this.fetchError;
             }
-        );
+        }, (e) => {
+            if (this.currentQuery === currentQuery) {
+                this.fetchError = e;
+            }
+        }).finally(() => {
+            if (this.currentQuery === currentQuery) {
+                delete this.currentQuery;
+            }
+        });
+        this.currentQuery = currentQuery;
+    }
+
+    createDatasourceModal() {
+        this.modalService.open({
+            component: 'rfDatasourceCreateModal'
+        }).result.then(() => {
+            this.search = '';
+            this.fetchPage(1, '');
+        });
     }
 }
 

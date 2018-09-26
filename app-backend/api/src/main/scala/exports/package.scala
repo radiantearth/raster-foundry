@@ -1,44 +1,44 @@
 package com.azavea.rf.api
 
-import io.circe._
-import io.circe.syntax._
+import java.net.{URI, URL, URLDecoder}
+import java.nio.charset.StandardCharsets.UTF_8
+import java.sql.Timestamp
+import java.util.Date
 
+import com.amazonaws.services.s3.AmazonS3URI
+import com.azavea.rf.api.utils.Config
 import com.azavea.rf.common.S3
 import com.azavea.rf.datamodel.{Export, ExportOptions, User}
-import com.azavea.rf.api.utils.Config
-import com.amazonaws.services.s3.AmazonS3URI
-
-import java.time.Duration
-import java.util.Date
-import java.net.{URI, URL, URLDecoder}
-import java.sql.Timestamp
-import java.nio.charset.StandardCharsets.UTF_8
+import io.circe.syntax._
 
 package object exports extends Config {
-  implicit def listUrlToListString(urls: List[URL]): List[String] = urls.map(_.toString)
+  implicit def listUrlToListString(urls: List[URL]): List[String] =
+    urls.map(_.toString)
 
   implicit class ExportOptionsMethods(exportOptions: ExportOptions) {
-    def getSignedUrls(duration: Duration = Duration.ofDays(1)): List[URL] = {
+    def getSignedUrls(): List[URL] = {
       (exportOptions.source.getScheme match {
-        case "s3" | "s3a" | "s3n" => Some(S3.getSignedUrls(exportOptions.source))
+        case "s3" | "s3a" | "s3n" =>
+          Some(S3.getSignedUrls(exportOptions.source))
         case _ => None
       }).getOrElse(Nil)
     }
 
     def getObjectKeys(): List[String] = {
       (exportOptions.source.getScheme match {
-        case "s3" | "s3a" | "s3n" => Some(S3.getObjectKeys(exportOptions.source))
+        case "s3" | "s3a" | "s3n" =>
+          Some(S3.getObjectKeys(exportOptions.source))
         case _ => None
       }).getOrElse(Nil)
     }
 
-    def getSignedUrl(objectKey: String, duration: Duration = Duration.ofDays(1)): URL = {
+    def getSignedUrl(objectKey: String): URL = {
       val amazonURI = new AmazonS3URI(exportOptions.source + "/" + objectKey)
-      val bucket:String = amazonURI.getBucket
-      val key:String = URLDecoder.decode(amazonURI.getKey, UTF_8.toString())
+      val bucket: String = amazonURI.getBucket
+      val key: String = URLDecoder.decode(amazonURI.getKey, UTF_8.toString())
       (exportOptions.source.getScheme match {
         case "s3" | "s3a" | "s3n" => Some(S3.getSignedUrl(bucket, key))
-        case _ => None
+        case _                    => None
       }).getOrElse(new URL(""))
     }
   }
@@ -51,7 +51,7 @@ package object exports extends Config {
       val now = new Timestamp(new Date().getTime)
 
       if (!S3.doesObjectExist(bucket, s"${key}/RFUploadAccessTestFile")) {
-        S3.putObject(
+        S3.putObjectString(
           dataBucket,
           s"${key}/RFUploadAccessTestFile",
           s"Allow Upload Access for RF: ${key} at ${now.toString}"
@@ -66,7 +66,7 @@ package object exports extends Config {
           val source: URI =
             exportOptions.source match {
               case uri if uri.toString.trim != "" => uri
-              case _ => createDefaultExportSource(export)
+              case _                              => createDefaultExportSource(export)
             }
 
           exportOptions.copy(source = source)
@@ -75,4 +75,5 @@ package object exports extends Config {
       export.copy(exportOptions = exportOptions.asJson)
     }
   }
+
 }

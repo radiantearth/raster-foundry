@@ -1,6 +1,6 @@
-<div class="sidebar-static" >
+<div class="sidebar-header dark" >
   <h5>Filters</h5>
-  <div class="sidebar-actions">
+  <div class="header-controls">
     <button class="btn btn-default btn-small" ng-click="$ctrl.close()">
       Close
     </button>
@@ -14,19 +14,11 @@
       </div>
     </div>
     <div class="filter-group">
-      <div class="filter"
-          ng-mouseleave="$ctrl.toggleDrag.toggle = false"
-          ng-mouseup="$ctrl.toggleDrag.toggle = false">
-        <label>Imagery sources</label>
-        <div class="filter-item tag-filter">
-          <button class="btn btn-toggle btn-small"
-                  ng-click="$ctrl.toggleSourceFilter(id)"
-                  ng-class="{'active': filter.enabled}"
-                  ng-repeat="(id, filter) in $ctrl.dynamicSourceFilters track by id">
-            {{filter.datasource.name}}
-          </button>
-        </div>
-      </div>
+      <rf-search-select-filter
+        class="filter-group"
+        data-filter="$ctrl.datasourceFilter"
+        on-filter-change="$ctrl.onDatasourceFilterChange(filter, filterParams)">
+      </rf-search-select-filter>
     </div>
     <div class="filter-group">
       <div class="filter">

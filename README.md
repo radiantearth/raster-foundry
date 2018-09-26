@@ -13,6 +13,7 @@ A virtual machine is used to encapsulate Docker dependencies. `docker-compose` i
 - AWS Account (to store artifacts, secrets)
 - [Auth0 Account](https://auth0.com/) (user management)
 - [Rollbar Account](https://rollbar.com/) (error reporting -- optional)
+- [Scalafmt](https://scalameta.org/scalafmt/docs/installation.html) (formatting scala code -- optional, but builds CI will fail if you introduce formatting that's not compliant with its results) 
 
 #### Setting Up AWS Account
 
@@ -52,12 +53,14 @@ export RF_ARTIFACTS_BUCKET=rasterfoundry-global-artifacts-us-east-1
 After exporting your environment settings, you are ready to get started:
 
 ```bash
-$ vagrant up
+$ ./scripts/setup
 $ vagrant ssh
 $ ./scripts/server
 ```
 
-Use `vagrant up` to provision a virtual machine. During provisioning `docker` and `docker-compose` will be installed on the guest machine. Additionally, docker images will be downloaded for the database and created for the `akka-http` application server.
+Use `./scripts/setup` to provision a virtual machine. During provisioning `docker` and `docker-compose` will be installed on the guest machine. Additionally, docker images will be downloaded for the database and created for the `akka-http` application server.
+
+The guest machine shares folders with the host using `rsync`. In order to sync files from the host to the guest, run `vagrant rsync-auto` in another tab. If you have generated files in the guest that you'd like to copy back into the host machine, run `scripts/rsync-back` from the host.
 
 Once the machine is provisioned you can start services or development by ssh-ing into the machine (`vagrant ssh`) and using the helper scripts in the `/opt/raster-foundry/scripts` directory.
 
@@ -66,10 +69,12 @@ If you do not have a development database to seed your database with, you will n
 Development workflow varies by developer, but a typical development experience might include the following:
 
  - Create a new feature branch
- - Start up the vagrant machine with `vagrant up --provision`
+ - Start up the vagrant machine with `./scripts/setup`
+ - Sync watched files by running `vagrant rsync-auto` in another tab.
  - Get an `sbt` console open using `./scripts/console api-server ./sbt`
  - Make changes to Scala code
  - Try compiling (`~compile`) or running the service to inspect it (`~api/run`)
+ - Extract files generated in the VM with `./scripts/rsync-back`
 
 ### Migrations
 
@@ -92,6 +97,8 @@ The workflow for creating a new migration is:
 
 To do frontend development you will want to install [`nvm`](https://github.com/creationix/nvm#install-script) and use at least version 6.9+ (`lts/boron`). Once using `nvm`, install [yarn](https://yarnpkg.com/) with `npm install -g yarn`. After following the directions above for starting the VM, start the API server and other backend services by running `./scripts/server`.
 
+
+
 Then _outside_ the VM, while the server is still running, run `yarn run start` while inside the `app-frontend/` directory. This will start a `webpack-dev-server` on port 9091 that will auto-reload after javascript and styling changes.
 
 The two options to rebuild the static assets served by Nginx:
@@ -107,7 +114,7 @@ To run tests you can do one of the following (in order of speed):
 
 #### Frontend Theming
 
-Frontend theming should only be used if you intend on forking and white labeling the application. Theming of the frontend application can be done easily with a few tweaks to the `scss`. To get theming working correctly, follow these instructions: 
+Frontend theming should only be used if you intend on forking and white labeling the application. Theming of the frontend application can be done easily with a few tweaks to the `scss`. To get theming working correctly, follow these instructions:
 
  - Edit `app-frontend/src/assets/styles/sass/app.scss` and uncomment the two blocks of code which reference theme files. This will turn the theme files _on_.
  - All theme overrides will then be written inside of `app-frontend/src/assets/styles/sass/theme`
@@ -117,7 +124,7 @@ Frontend theming should only be used if you intend on forking and white labeling
      - **Tip:** You can mimic the main application `scss` structure inside of `/theme/` and `@import` the files into `_core.scss`
  - WIP: we are still working out the kinks for icon fonts and branding assets.
 
-Due to active development to Raster Foundry, some aspects of theming might break and will need active maintenance. 
+Due to active development to Raster Foundry, some aspects of theming might break and will need active maintenance.
 
 ## Ports
 
@@ -130,25 +137,25 @@ The Vagrant configuration maps the following host ports to services running in t
 | Nginx (tiler)             | [`9101`](http://localhost:9101) | `RF_PORT_9101`       |
 | Application Server (akka) | [`9000`](http://localhost:9000) | `RF_PORT_9000`       |
 | Tile Server (akka)        | [`9900`](http://localhost:9900) | `RF_PORT_9900`       |
-| Airflow UI                | [`8080`](http://localhost:8080) | `RF_PORT_8080`       |
-| Airflow Flower            | [`5555`](http://localhost:5555) | `RF_PORT_5555`       |
 
 ## Scripts
 
 Helper and development scripts are located in the `./scripts` directory at the root of this project. These scripts are designed to encapsulate and perform commonly used actions such as starting a development server, accessing a development console, or running tests.
 
-| Script Name             | Purpose                                                      |
-|-------------------------|--------------------------------------------------------------|
-| `bootstrap`             | Pulls/builds necessary containers                            |
-| `setup`                 | Runs migrations, installs dependencies, etc.                 |
-| `server`                | Starts a development server                                  |
-| `console`               | Gives access to a running container via `docker-compose run` |
-| `psql`                  | Drops you into a `psql` console.                             |
-| `test`                  | Runs tests and linters for project                           |
-| `cibuild`               | Invoked by CI server and makes use of `test`.                |
-| `cipublish`             | Publish container images to container image repositories.    |
-| `load_development_data` | Load data for development purposes                           |
-| `publish-jars`          | Publish JAR artifacts to S3                                  |
+| Script Name               | Purpose                                                      |
+|---------------------------|--------------------------------------------------------------|
+| `bootstrap`               | Pulls/builds necessary containers                            |
+| `setup`                   | Provision development VM                                     |
+| `update`                  | Runs migrations, installs dependencies, etc.                 |
+| `server`                  | Starts a development server                                  |
+| `console`                 | Gives access to a running container via `docker-compose run` |
+| `psql`                    | Drops you into a `psql` console.                             |
+| `test`                    | Runs tests and linters for project                           |
+| `cibuild`                 | Invoked by CI server and makes use of `test`.                |
+| `cipublish`               | Publish container images to container image repositories.    |
+| `load_development_data`   | Load data for development purposes from S3                   |
+| `publish-jars`            | Publish JAR artifacts to S3                                  |
+| `rsync-back`              | Perform a one-way `rsync` from the VM to the host.           |
 
 ## Testing
 

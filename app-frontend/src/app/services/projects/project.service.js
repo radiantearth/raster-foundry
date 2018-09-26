@@ -1,6 +1,4 @@
-/* globals BUILDCONFIG */
-
-/* global L */
+/* globals BUILDCONFIG _ L*/
 const availableProcessingOptions = [
     {
         label: 'Color Corrected',
@@ -51,8 +49,7 @@ export default (app) => {
             this.$location = $location;
             this.$q = $q;
             this.availableProcessingOptions = availableProcessingOptions;
-
-            this.currentProject = null;
+            this.availableProcessingOptionsThin = this.availableProcessingOptions.slice(0, 2);
 
             this.tileServer = `${APP_CONFIG.tileServerLocation}`;
 
@@ -86,6 +83,14 @@ export default (app) => {
                         url: `${BUILDCONFIG.API_HOST}/api/projects/:projectId/scenes/`,
                         params: {
                             projectId: '@projectId'
+                        }
+                    },
+                    projectDatasources: {
+                        method: 'GET',
+                        cache: false,
+                        url: `${BUILDCONFIG.API_HOST}/api/projects/:projectId/datasources`,
+                        params: {
+                            projectId: '@projectId'
                         },
                         isArray: true
                     },
@@ -94,8 +99,7 @@ export default (app) => {
                         cache: false,
                         url: `${BUILDCONFIG.API_HOST}/api/projects/:projectId/scenes`,
                         params: {
-                            projectId: '@projectId',
-                            pending: '@pending'
+                            projectId: '@projectId'
                         }
                     },
                     projectAois: {
@@ -115,7 +119,7 @@ export default (app) => {
                     },
                     export: {
                         method: 'POST',
-                        url: '/api/exports/'
+                        url: `${BUILDCONFIG.API_HOST}/api/exports/`
                     },
                     listExports: {
                         method: 'GET',
@@ -131,13 +135,34 @@ export default (app) => {
                             projectId: '@projectId'
                         }
                     },
-                    approveScene: {
+                    approveScenes: {
                         method: 'POST',
                         url: `${BUILDCONFIG.API_HOST}` +
-                            '/api/projects/:projectId/scenes/:sceneId/accept',
+                            '/api/projects/:projectId/scenes/accept',
                         params: {
-                            projectId: '@projectId',
-                            sceneId: '@sceneId'
+                            projectId: '@projectId'
+                        }
+                    },
+                    sceneOrder: {
+                        method: 'GET',
+                        url: `${BUILDCONFIG.API_HOST}/api/projects/:projectId/order/`,
+                        cache: false,
+                        params: {
+                            projectId: '@projectId'
+                        }
+                    },
+                    updateSceneOrder: {
+                        method: 'PUT',
+                        url: `${BUILDCONFIG.API_HOST}/api/projects/:projectId/order/`,
+                        params: {
+                            projectId: '@projectId'
+                        }
+                    },
+                    colorMode: {
+                        method: 'POST',
+                        url: `${BUILDCONFIG.API_HOST}/api/projects/:projectId/project-color-mode/`,
+                        params: {
+                            projectId: '@projectId'
                         }
                     }
                 }
@@ -148,7 +173,55 @@ export default (app) => {
             return this.Project.query(params).$promise;
         }
 
-        get(id) {
+        searchQuery() {
+            return this.$q((resolve, reject) => {
+                let pageSize = 1000;
+                let firstPageParams = {
+                    pageSize: pageSize,
+                    page: 0,
+                    sort: 'createdAt,desc'
+                };
+
+                let firstRequest = this.query(firstPageParams);
+
+                firstRequest.then((page) => {
+                    let self = this;
+                    let num = page.count;
+                    let requests = [firstRequest];
+                    if (page.count > pageSize) {
+                        let requestMaker = function *(totalResults) {
+                            let pageNum = 1;
+                            while (pageNum * pageSize <= totalResults) {
+                                let pageParams = {
+                                    pageSize: pageSize,
+                                    page: pageNum,
+                                    sort: 'createdAt,desc'
+                                };
+                                yield self.query(pageParams);
+                                pageNum += 1;
+                            }
+                        };
+
+                        requests = requests.concat(Array.from(requestMaker(num)));
+                    }
+
+                    this.$q.all(requests).then(
+                        (allResponses) => {
+                            resolve(
+                                allResponses.reduce((res, resp) => res.concat(resp.results), [])
+                            );
+                        },
+                        () => {
+                            reject('Error loading projects.');
+                        }
+                    );
+                }, () => {
+                    reject('Error loading projects.');
+                });
+            });
+        }
+
+        fetchProject(id) {
             return this.Project.get({id}).$promise;
         }
 
@@ -159,7 +232,6 @@ export default (app) => {
         export(project, settings = {}, options = {}) {
             const defaultOptions = {
                 resolution: 9,
-                stitch: false,
                 crop: false
             };
 
@@ -217,12 +289,8 @@ export default (app) => {
             ).$promise;
         }
 
-        getProjectScenes(params) {
-            return this.Project.projectScenes(params).$promise;
-        }
-
         getProjectCorners(projectId) {
-            return this.getAllProjectScenes({projectId: projectId}).then((scenes) => {
+            return this.getAllProjectScenes({projectId: projectId}).then(({scenes}) => {
                 let corners = {
                     lowerLeftLon: null,
                     lowerLeftLat: null,
@@ -252,84 +320,46 @@ export default (app) => {
             });
         }
 
-        /** Return all scenes in a single collection, making multiple requests if necessary
-         *
-         * @param {object} params to pass as query params
-         * @return {Promise} promise that will resolve when all scenes are available
-         */
-        getAllProjectScenes(params) {
-            let deferred = this.$q.defer();
-            let pageSize = 30;
-            let firstPageParams = Object.assign({}, params, {
-                pageSize: pageSize,
-                page: 0,
-                sort: 'createdAt,desc'
-            });
-            let firstRequest = this.getProjectScenes(firstPageParams);
+        getProjectScenes(projectId, params = {}) {
+            return this.Project.projectScenes(
+                Object.assign({}, {
+                    projectId,
+                    pending: false,
+                    page: 0,
+                    pageSize: 30
+                }, params)
+            ).$promise;
+        }
 
-            firstRequest.then((page) => {
-                let self = this;
-                let numScenes = page.count;
-                let requests = [firstRequest];
-                if (page.count > pageSize) {
-                    let requestMaker = function *(totalResults) {
-                        let pageNum = 1;
-                        while (pageNum * pageSize <= totalResults) {
-                            let pageParams = Object.assign({}, params, {
-                                pageSize: pageSize,
-                                page: pageNum,
-                                sort: 'createdAt,desc'
-                            });
-                            yield self.getProjectScenes(pageParams);
-                            pageNum = pageNum + 1;
-                        }
-                    };
-
-                    requests = requests.concat(Array.from(requestMaker(numScenes)));
-                    // Unpack responses into a single scene list.
-                    // The structure to unpack is:
-                    // [{ results: [{},{},...] }, { results: [{},{},...]},...]
-                }
-
-                this.$q.all(requests).then(
-                    (allResponses) => {
-                        deferred.resolve(
-                            allResponses.reduce((res, resp) => res.concat(resp.results), [])
-                        );
-                    },
-                    () => {
-                        deferred.reject('Error loading scenes.');
-                    }
-                );
-            }, () => {
-                deferred.reject('Error loading scenes.');
-            });
-
-            return deferred.promise;
+        getProjectDatasources(projectId) {
+            return this.Project.projectDatasources({projectId}).$promise;
         }
 
         getProjectStatus(projectId) {
-            return this.getAllProjectScenes({ projectId }).then(scenes => {
-                if (scenes) {
-                    const counts = scenes.reduce((acc, scene) => {
-                        const ingestStatus = scene.statusFields.ingestStatus;
-                        acc[ingestStatus] = acc[ingestStatus] + 1 || 1;
-                        return acc;
-                    }, {});
-                    if (counts.FAILED) {
-                        return 'FAILED';
-                    } else if (counts.NOTINGESTING || counts.TOBEINGESTED || counts.INGESTING) {
-                        return 'PARTIAL';
-                    } else if (counts.INGESTED) {
-                        return 'CURRENT';
-                    }
+            return this.$q.all({
+                allScenes: this.getProjectScenes(
+                    projectId, {page: 0, pageSize: 0}
+                ),
+                failedScenes: this.getProjectScenes(
+                    projectId, {page: 0, pageSize: 0, ingestStatus: 'FAILED'}
+                ),
+                successScenes: this.getProjectScenes(
+                    projectId, {page: 0, pageSize: 0, ingestStatus: 'INGESTED'}
+                )
+            }).then(({allScenes, failedScenes, successScenes}) => {
+                if (failedScenes.count > 0) {
+                    return 'FAILED';
+                } else if (successScenes.count < allScenes.count) {
+                    return 'PARTIAL';
+                } else if (successScenes.count === allScenes.count && allScenes.count > 0) {
+                    return 'CURRENT';
                 }
                 return 'NOSCENES';
             });
         }
 
         getProjectSceneCount(params) {
-            let countParams = Object.assign({}, params, {pageSize: 1, page: 0});
+            let countParams = Object.assign({}, params, {pageSize: 0, page: 0});
             return this.Project.projectScenes(countParams).$promise;
         }
 
@@ -363,19 +393,25 @@ export default (app) => {
             });
         }
 
-        approveScene(projectId, sceneId) {
-            return this.Project.approveScene({ projectId, sceneId }).$promise;
+        approveScenes(projectId, sceneIds) {
+            return this.Project.approveScenes(
+                {projectId},
+                sceneIds
+            ).$promise;
         }
 
-        getBaseURL() {
-            let host = BUILDCONFIG.API_HOST || this.$location.host();
-            let protocol = this.$location.protocol();
-            let port = this.$location.port();
-            let formattedPort = port !== 80 && port !== 443 ? ':' + port : '';
-            return `${protocol}://${host}${formattedPort}`;
+        getProjectLayerURL(project, params) {
+            let projectId = typeof project === 'object' ? project.id : project;
+            let queryParams = params || {};
+            queryParams.tag = new Date().getTime();
+            let formattedParams = L.Util.getParamString(queryParams);
+
+            return `${this.tileServer}/${projectId}/{z}/{x}/{y}/${formattedParams}`;
         }
 
-        getProjectLayerURL(project, token) {
+        getProjectShareLayerURL(project, token) {
+            let projectId = typeof project === 'object' ? project.id : project;
+
             let params = {
                 tag: new Date().getTime()
             };
@@ -386,7 +422,7 @@ export default (app) => {
 
             let formattedParams = L.Util.getParamString(params);
 
-            return `${this.tileServer}/${project.id}/{z}/{x}/{y}/${formattedParams}`;
+            return `${this.tileServer}/${projectId}/{z}/{x}/{y}/${formattedParams}`;
         }
 
         getZoomLevel(bbox) {
@@ -412,7 +448,7 @@ export default (app) => {
             if (project.extent) {
                 let coords = project.extent.coordinates[0];
                 // Lower left and upper right coordinates in extent
-                let bbox = [... coords[0], ... coords[2]];
+                let bbox = [...coords[0], ...coords[2]];
                 let params = {
                     bbox: bbox,
                     zoom: this.getZoomLevel(bbox),
@@ -425,38 +461,73 @@ export default (app) => {
             return null;
         }
 
-        getProjectShareURL(project) {
-            let deferred = this.$q.defer();
-            let shareUrl = `${this.getBaseURL()}/#/share/${project.id}`;
-            if (project.tileVisibility === 'PRIVATE') {
-                this.tokenService.getOrCreateProjectMapToken(project).then((token) => {
-                    deferred.resolve(`${shareUrl}/?mapToken=${token.id}`);
-                });
-            } else {
-                deferred.resolve(shareUrl);
-            }
-            return deferred.promise;
+        getBaseURL() {
+            let host = this.$location.host();
+            let protocol = this.$location.protocol();
+            let port = this.$location.port();
+            let formattedPort = port !== 80 && port !== 443 ? ':' + port : '';
+            return `${protocol}://${host}${formattedPort}`;
         }
 
-        loadProject(id) {
-            this.isLoadingProject = true;
-            this.currentProjectId = id;
-            const request = this.get(id);
-            request.then(
-                p => {
-                    this.currentProject = p;
-                },
-                () => {
-                    this.currentProjectId = null;
+        getProjectShareURL(project) {
+            return this.$q((resolve, reject) => {
+                let shareUrl = `${this.getBaseURL()}/share/${project.id}`;
+                if (project.tileVisibility === 'PRIVATE') {
+                    this.tokenService.getOrCreateProjectMapToken(project).then((token) => {
+                        resolve(`${shareUrl}/?mapToken=${token.id}`);
+                    }, (error) => reject(error));
+                } else {
+                    resolve(shareUrl);
                 }
-            ).finally(() => {
-                this.isLoadingProject = false;
             });
-            return request;
         }
 
         getProjectAois(projectId) {
             return this.Project.projectAois({projectId: projectId}).$promise;
+        }
+
+        getSceneOrder(projectId) {
+            const pageSize = 30;
+            const firstPageParams = {
+                pageSize,
+                page: 0
+            };
+            return this.Project.sceneOrder({projectId: projectId}, firstPageParams)
+                .$promise.then((res) => {
+                    const scenes = res.results;
+                    const count = res.count;
+                    let promises = Array(
+                        Math.ceil((count || 1) / pageSize) - 1
+                    ).fill().map((x, page) => {
+                        return this.Project.sceneOrder({
+                            projectId,
+                            pageSize,
+                            page: page + 1
+                        }).$promise.then((pageResponse) => pageResponse.results);
+                    });
+                    return this.$q.all(promises).then((sceneChunks) => {
+                        const allScenes = scenes.concat(_.flatten(sceneChunks));
+                        return allScenes;
+                    });
+                });
+        }
+
+        updateSceneOrder(projectId, sceneIds) {
+            return this.Project.updateSceneOrder(
+                {projectId: projectId},
+                sceneIds
+            ).$promise;
+        }
+
+        getAnnotationShapefile(projectId) {
+            return this.$http({
+                method: 'GET',
+                url: `${BUILDCONFIG.API_HOST}/api/projects/${projectId}/annotations/shapefile`
+            });
+        }
+
+        setProjectColorMode(projectId, bands) {
+            return this.Project.colorMode({projectId}, bands).$promise;
         }
     }
 

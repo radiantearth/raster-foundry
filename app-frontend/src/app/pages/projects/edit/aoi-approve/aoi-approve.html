@@ -17,12 +17,13 @@
                 class="btn btn-primary"
                 style="width: 12rem;"
                 ng-click="$ctrl.applySceneStatuses()"
-                ng-disabled="!$ctrl.sceneStatusCounts.APPROVED && !$ctrl.sceneStatusCounts.REJECTED">
+                ng-disabled="!$ctrl.approvedSet.size && !$ctrl.rejectedSet.size">
           Apply
         </button>
         <button type="button"
                 class="btn dropdown-toggle"
-                ng-class="{'btn-secondary': $ctrl.sceneStatusCounts.APPROVED && $ctrl.sceneStatusCounts.APPROVED === $ctrl.sceneStatusCounts.TOTAL}"
+                ng-class="{'btn-secondary': $ctrl.currentPageApproved()}"
+                ng-title="Select scenes on this page"
                 ng-click="$ctrl.toggleAllSceneApproval()">
           <i class="icon-check"></i>
         </button>
@@ -32,18 +33,20 @@
 </div>
 <div class="list-group" ng-if="$ctrl.pendingSceneList">
   <div class="list-group-item">
-    <span class="no-margin" ng-if="!$ctrl.sceneStatusCounts.APPROVED && !$ctrl.sceneStatusCounts.REJECTED">No scenes selected to approve</span>
-    <span class="no-margin" ng-if="$ctrl.sceneStatusCounts.APPROVED">
-      <ng-pluralize count="$ctrl.sceneStatusCounts.APPROVED"
+    <span class="no-margin" ng-if="!$ctrl.approvedSet.size && !$ctrl.rejectedSet.size">
+      No scenes selected to approve
+    </span>
+    <span class="no-margin" ng-if="$ctrl.approvedSet.size">
+      <ng-pluralize count="$ctrl.approvedSet.size"
                     when="{'one': '1 scene',
                           'other': '{} scenes'
                           }">
       </ng-pluralize>
       <strong class="color-primary">approved</strong>
     </span>
-    <span class="no-margin" ng-if="$ctrl.sceneStatusCounts.APPROVED && $ctrl.sceneStatusCounts.REJECTED">&nbsp;and&nbsp;</span>
-    <span class="no-margin" ng-if="$ctrl.sceneStatusCounts.REJECTED">
-      <ng-pluralize count="$ctrl.sceneStatusCounts.REJECTED"
+    <span class="no-margin" ng-if="$ctrl.approvedSet.size && $ctrl.rejectedSet.size">&nbsp;and&nbsp;</span>
+    <span class="no-margin" ng-if="$ctrl.rejectedSet.size">
+      <ng-pluralize count="$ctrl.rejectedSet.size"
                     when="{'one': '1 scene',
                           'other': '{} scenes'
                           }">
@@ -54,30 +57,30 @@
 </div>
 <div class="sidebar-scrollable list-group">
   <rf-scene-item
-      ng-click="$ctrl.openSceneDetailModal(scene)"
+      previewable
+      clickable
       scene="scene"
-      is-disabled="$ctrl.isInProject(scene)"
-      on-select="$ctrl.setSelected(scene, selected)"
-      class="selectable"
+      repository="$ctrl.repository"
+      selected="$ctrl.isSceneApproved(scene)"
+      on-select="$ctrl.toggleSceneApproval(scene)"
       ng-mouseenter="$ctrl.setHoveredScene(scene)"
       ng-mouseleave="$ctrl.removeHoveredScene()"
       ng-repeat="scene in $ctrl.pendingSceneList track by scene.id">
-    <rf-toggle value="$ctrl.isSceneApproved(scene)" on-change="$ctrl.toggleSceneApproval(scene, $event)">
-      <i class="icon-check"></i>
-    </rf-toggle>
-    <rf-toggle value="$ctrl.isSceneRejected(scene)" on-change="$ctrl.toggleSceneRejection(scene, $event)" class-name="danger">
+    <rf-toggle value="$ctrl.isSceneRejected(scene)"
+               on-change="$ctrl.toggleSceneRejection(scene, $event)"
+               custom-icon="true"
+               class-name="danger">
       <i class="icon-cross"></i>
     </rf-toggle>
   </rf-scene-item>
-  <div class="sidebar-content">
-    <button class="btn btn-block btn-secondary"
-            ng-if="!$ctrl.loadingScenes && $ctrl.lastSceneResult && $ctrl.lastSceneResult.hasNext && !$ctrl.errorMsg"
-            ng-click="$ctrl.getMoreScenes()">
-      Load More Scenes
-    </button>
-  </div>
+  <rf-pagination-controls
+      pagination="$ctrl.pagination"
+      is-loading="$ctrl.currentQuery"
+      on-change="$ctrl.fetchPage(value)"
+      ng-show="!$ctrl.currentQuery && !$ctrl.fetchError"
+  ></rf-pagination-controls>
 </div>
-<div class="sidebar sidebar-extended map-filters"
+<div class="sidebar sidebar-extended sidebar-dark"
      ng-show="$ctrl.showFilterPane && !$ctrl.activeScene">
   <rf-scene-filter-pane ng-if="$ctrl.filters"
                   data-opened="$ctrl.showFilterPane"

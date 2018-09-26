@@ -1,8 +1,19 @@
 'use strict';
-/* globals module */
+/* globals process module */
 /* no-console: 0 */
 
+const path = require('path');
 const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HELP_DOCS = require('./helpDocs.json');
+
+const NODE_ENV = process.env.NODE_ENV || 'production';
+const DEVELOPMENT = NODE_ENV === 'production' ? false : true;
+
+const HERE_APP_ID = 'v88MqS5fQgxuHyIWJYX7';
+const HERE_APP_CODE = '5pn07ENomTHOap0u7nQSFA';
+
+const INTERCOM_APP_ID = '';
 
 const basemaps = JSON.stringify({
     layers: {
@@ -26,14 +37,34 @@ const basemaps = JSON.stringify({
     default: 'Light'
 });
 
-module.exports = function () {
+module.exports = function (_path) {
     return {
         plugins: [
+            new HtmlWebpackPlugin({
+                filename: 'index.html',
+                template: path.join(_path, 'src', 'tpl-index.html'),
+                heapLoad: DEVELOPMENT ? '2743344218' : '3505855839',
+                development: DEVELOPMENT,
+                APP_NAME: 'Raster Foundry'
+            }),
+
             new webpack.DefinePlugin({
                 'BUILDCONFIG': {
-                    APP_NAME: '\'RasterFoundry?\'',
+                    APP_NAME: JSON.stringify('Raster Foundry'),
                     BASEMAPS: basemaps,
-                    API_HOST: '\'https://app.rasterfoundry.com\''
+                    API_HOST: JSON.stringify(''),
+                    HERE_APP_ID: JSON.stringify(HERE_APP_ID),
+                    HERE_APP_CODE: JSON.stringify(HERE_APP_CODE),
+                    INTERCOM_APP_ID: JSON.stringify(INTERCOM_APP_ID),
+                    THEME: JSON.stringify('default'),
+                    AUTH0_PRIMARY_COLOR: JSON.stringify('#465076'),
+                    LOGOFILE: JSON.stringify('raster-foundry-logo.svg'),
+                    LOGOURL: JSON.stringify(false),
+                    FAVICON_DIR: JSON.stringify('/favicon'),
+                    FEED_SOURCE: JSON.stringify('https://blog.rasterfoundry.com/latest?format=json')
+                },
+                'HELPCONFIG': {
+                    HELP_DOCS: JSON.stringify(HELP_DOCS)
                 }
             })
         ]

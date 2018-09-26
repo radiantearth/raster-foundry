@@ -1,31 +1,30 @@
-/* global AWS */
-/* global document */
-/* global window */
+/* global AWS, document, window, BUILDCONFIG, _ */
+import { initialize as loamInitialize, open as loamOpen } from 'loam';
+/* eslint-disable no-unused-vars */
+import loamWorker from 'loamLib/loam-worker.js';
+import gdalJs from 'gdalJs/gdal.js';
+import gdalWasm from 'gdalJs/gdal.wasm';
+import gdalData from 'gdalJs/gdal.data';
+/* eslint-enable no-unused-vars */
 
 import planetLogo from '../../../../assets/images/planet-logo-light.png';
 import awsS3Logo from '../../../../assets/images/aws-s3.png';
 import dropboxIcon from '../../../../assets/images/dropbox-icon.svg';
 
-const availableImportTypes = ['local', 'S3', 'Planet'];
+const availableImportTypes = ['local', 'S3', 'Planet', 'COG'];
 
 export default class SceneImportModalController {
     constructor(
-        $scope, $state,
+        $rootScope, $scope, $state, $q, $log,
         projectService, Upload, uploadService, authService,
-        rollbarWrapperService, datasourceService, userService
+        rollbarWrapperService, datasourceService, userService,
+        sceneService, APP_CONFIG
     ) {
         'ngInject';
-        this.$scope = $scope;
-        this.$state = $state;
-        this.projectService = projectService;
-        this.Upload = Upload;
-        this.uploadService = uploadService;
-        this.authService = authService;
-        this.rollbarWrapperService = rollbarWrapperService;
-        this.datasourceService = datasourceService;
-        this.availableImportTypes = availableImportTypes;
-        this.userService = userService;
+        $rootScope.autoInject(this, arguments);
 
+        this.BUILDCONFIG = BUILDCONFIG;
+        this.availableImportTypes = availableImportTypes;
         this.planetLogo = planetLogo;
         this.awsS3Logo = awsS3Logo;
         this.dropboxIcon = dropboxIcon;
@@ -38,11 +37,22 @@ export default class SceneImportModalController {
             bucket: '',
             prefix: ''
         };
+        this.cogConfig = {
+            url: ''
+        };
+        this.isCog = false;
         this.planetSceneIds = '';
+        this.selectedFileDatasets = [];
         this.selectedFiles = [];
-        this.sceneData = {};
+        this.sceneData = {
+            acquisitionDate: new Date(),
+            cloudCover: 0
+        };
         this.uploadProgressPct = {};
         this.uploadProgressFlexString = {};
+        this.abortedUploadCount = 0;
+        this.uploadedFileCount = 0;
+
         this.datasource = this.resolve.datasource || false;
         const onWindowUnload = (event) => {
             if (this.closeCanceller) {
@@ -80,7 +90,9 @@ export default class SceneImportModalController {
             previous: () => this.resolve.datasource ? false : 'DATASOURCE_SELECT',
             allowPrevious: () => true,
             next: () => {
-                if (this.importType === 'S3') {
+                if (this.importType === 'COG') {
+                    return 'METADATA';
+                } else if (this.importType === 'S3') {
                     return 'METADATA';
                 } else if (this.importType === 'Planet') {
                     return 'IMPORT_PLANET';
@@ -104,17 +116,25 @@ export default class SceneImportModalController {
         }, {
             name: 'LOCAL_UPLOAD',
             onEnter: () => {
+                loamInitialize();
                 this.verifyFileCount();
             },
             previous: () => 'IMPORT',
             allowPrevious: () => true,
             next: () => 'METADATA',
-            allowNext: () => this.verifyFileCount(),
+            allowNext: () => this.verifyFileCount() && this.verifyValidTiffs(),
             allowClose: () => true
         }, {
             name: 'METADATA',
+            onExit: () => {
+                this.selectedFileDatasets.map(fileDS => {
+                    return fileDS.dataset.then(ds => ds.close());
+                });
+            },
             next: () => {
-                if (this.importType === 'S3') {
+                if (this.importType === 'COG') {
+                    return 'IMPORT_COG';
+                } else if (this.importType === 'S3') {
                     return 'S3_UPLOAD';
                 }
                 return 'UPLOAD_PROGRESS';
@@ -126,12 +146,18 @@ export default class SceneImportModalController {
         }, {
             name: 'UPLOAD_PROGRESS',
             onEnter: () => this.startLocalUpload(),
-            next: () => 'IMPORT_SUCCESS'
+            next: () => 'IMPORT_SUCCESS',
+            allowNext: () => {
+                return this.fileUploads &&
+                    this.uploadedFileCount + this.abortedUploadCount === this.fileUploads.length;
+            },
+            onExit: () => this.finishUpload()
         }, {
             name: 'S3_UPLOAD',
             previous: () => 'IMPORT',
             next: () => 'IMPORT_SUCCESS',
-            onEnter: () => this.startS3Upload()
+            onEnter: () => this.startS3Upload(),
+            onExit: () => this.finishUpload()
         }, {
             name: 'IMPORT_SUCCESS',
             allowDone: () => true
@@ -139,6 +165,19 @@ export default class SceneImportModalController {
             name: 'IMPORT_PLANET',
             previous: () => 'IMPORT',
             onEnter: () => this.startPlanetUpload(),
+            onExit: () => this.finishUpload(),
+            next: () => 'IMPORT_SUCCESS'
+        }, {
+            name: 'IMPORT_COG',
+            previous: () => 'IMPORT',
+            allowPrevious: () => false,
+            onEnter: () => this.startCogImport(),
+            next: () => 'IMPORT_COG_PROGRESS'
+        }, {
+            name: 'IMPORT_COG_PROGRESS',
+            previous: () => 'IMPORT_COG',
+            allowPrevious: () => false,
+            allowNext: () => false,
             next: () => 'IMPORT_SUCCESS'
         }, {
             name: 'IMPORT_ERROR',
@@ -146,6 +185,10 @@ export default class SceneImportModalController {
         }]);
 
         this.setCurrentStep(this.steps[0]);
+    }
+
+    onCogChange(value) {
+        this.isCog = value;
     }
 
     getStep(stepName) {
@@ -191,6 +234,7 @@ export default class SceneImportModalController {
 
     handleDone() {
         this.close();
+        this.$state.reload();
     }
 
     validateS3Config() {
@@ -202,7 +246,7 @@ export default class SceneImportModalController {
     }
 
     shouldShowFileList() {
-        return this.selectedFiles.length;
+        return this.selectedFileDatasets.length;
     }
 
     shouldShowList() {
@@ -259,7 +303,11 @@ export default class SceneImportModalController {
     }
 
     verifyFileCount() {
-        return Boolean(this.selectedFiles.length);
+        return Boolean(this.selectedFileDatasets.length);
+    }
+
+    verifyValidTiffs() {
+        return this.selectedFileDatasets.filter(fileDS => fileDS.bandCount < 0).length === 0;
     }
 
     startLocalUpload() {
@@ -285,9 +333,38 @@ export default class SceneImportModalController {
                 this.uploadsDone();
                 return upload;
             }, err => {
+                this.handleNext();
                 this.uploadError(err);
-                this.handlePrevious();
+            }).finally(() => {
+                this.allowInterruptions();
             });
+    }
+
+    startCogImport() {
+        this.preventInterruptions();
+        this.handleNext();
+        let tries = 0;
+        this.sceneService.createCogScene({
+            metadata: this.sceneData,
+            location: this.cogConfig.url,
+            projectId: _.get(this, 'resolve.project.id') || false
+        }, this.datasource).then(() => {
+            this.handleNext();
+        }, err => {
+            this.uploadError(err);
+            this.handleNext();
+        }).finally(() => {
+            this.allowInterruptions();
+        });
+    }
+
+    finishUpload() {
+        this.upload.uploadStatus = this.isCog ?
+            'COMPLETE' :
+            'UPLOADED';
+        this.uploadService.update(this.upload).then(() => {
+            this.allowInterruptions();
+        });
     }
 
     startPlanetUpload() {
@@ -318,7 +395,7 @@ export default class SceneImportModalController {
         };
 
         if (this.importType === 'local') {
-            uploadObject.files = this.selectedFiles.map(f => f.name);
+            uploadObject.files = this.selectedFileDatasets.map(f => f.file.name);
             uploadObject.uploadType = 'LOCAL';
         } else if (this.importType === 'S3') {
             uploadObject.uploadType = 'S3';
@@ -355,7 +432,10 @@ export default class SceneImportModalController {
             sessionToken: credentialData.credentials.SessionToken
         });
         const s3 = new AWS.S3(config);
-        this.selectedFiles.forEach(f => this.sendFile(s3, bucket, f));
+        this.cachedUploadConfig = {s3, bucket};
+        this.fileUploads = this.selectedFileDatasets.map(
+            fileDS => this.sendFile(s3, bucket, fileDS.file)
+        );
     }
 
     sendFile(s3, bucket, file) {
@@ -367,40 +447,104 @@ export default class SceneImportModalController {
             },
             service: s3
         });
-        const uploadPromise = managedUpload.promise();
 
-        managedUpload.on('httpUploadProgress', this.handleUploadProgress.bind(this));
-        uploadPromise.then(() => {
-            this.$scope.$evalAsync(() => {
-                this.uploadDone();
-            });
-        }, err => {
-            this.uploadError(err);
+        let upload = {
+            file: file,
+            api: managedUpload,
+            promise: managedUpload.promise(),
+            finished: false,
+            aborted: false
+        };
+
+        let filePath = `s3://${bucket}/${file.name}`;
+        if (!this.upload.files.includes(filePath)) {
+            this.upload.files.push(filePath);
+        }
+
+        managedUpload.on('httpUploadProgress', (progress) => {
+            this.handleUploadProgress(upload, progress);
         });
+
+        upload.promise.then(() => {
+            this.$scope.$evalAsync(() => {
+                this.uploadDone(upload);
+            });
+        }, (err) => {
+            this.uploadError(err, upload);
+        });
+
+        this.$scope.$evalAsync(() => {
+            this.uploadProgressPct[upload.file.name] = '0%';
+            this.uploadProgressFlexString[upload.file.name] = '0 0';
+        });
+        return upload;
     }
 
-    uploadDone() {
-        this.uploadedFileCount += 1;
-        if (this.uploadedFileCount === this.selectedFiles.length) {
+    retryUpload(upload) {
+        this.preventInterruptions();
+
+        let uploadIndex = this.fileUploads.findIndex((u) => u === upload);
+        this.fileUploads[uploadIndex] = this.sendFile(
+            this.cachedUploadConfig.s3, this.cachedUploadConfig.bucket, upload.file
+        );
+        this.abortedUploadCount = this.fileUploads.filter(u => u.aborted).length;
+    }
+
+    abortUpload(upload) {
+        upload.api.abort();
+        upload.aborted = true;
+
+        this.upload.files = this.upload.files.filter(path => !path.includes(upload.file.name));
+
+        this.$scope.$evalAsync(() => {
+            this.uploadProgressPct[upload.file.name] = 'Aborted';
+            this.uploadProgressFlexString[upload.file.name] = '1 0';
+        });
+
+        this.abortedUploadCount = this.fileUploads.filter(u => u.aborted).length;
+    }
+
+    uploadDone(upload) {
+        upload.finished = true;
+        this.uploadedFileCount = this.fileUploads.filter(u => u.finished).length;
+        if (this.abortedUploadCount + this.uploadedFileCount === this.fileUploads.length) {
             this.uploadsDone();
         }
+        this.$scope.$evalAsync();
     }
 
     uploadsDone() {
-        this.upload.uploadStatus = 'UPLOADED';
-        this.uploadService.update(this.upload).then(() => {
-            this.handleNext();
-        });
-
-        this.allowInterruptions();
+        if (!this.abortedUploadCount) {
+            if (this.isCog) {
+                this.$q.all(this.upload.files.map(f => {
+                    this.handleNext();
+                    return this.sceneService.createCogScene({
+                        metadata: this.sceneData,
+                        location: encodeURI(f),
+                        projectId: _.get(this, 'resolve.project.id') || false
+                    }, this.datasource);
+                }));
+            } else {
+                this.handleNext();
+            }
+        }
     }
 
-    uploadError(err) {
-        this.allowInterruptions();
-        this.currentError = err;
+    uploadError(err, upload) {
+        if (upload && !upload.aborted) {
+            Object.assign(upload, {error: err});
+            this.$scope.$evalAsync(() => {
+                this.uploadProgressPct[upload.file.name] = 'Errored';
+                this.uploadProgressFlexString[upload.file.name] = '1 0';
+            });
+            this.$scope.$evalAsync();
+        } else {
+            this.error = err;
+        }
     }
 
-    handleUploadProgress(progress) {
+    handleUploadProgress(upload, progress) {
+        upload.progress = progress;
         this.$scope.$evalAsync(() => {
             this.uploadProgressPct[progress.key] =
                 `${(progress.loaded / progress.total * 100).toFixed(1)}%`;
@@ -414,23 +558,57 @@ export default class SceneImportModalController {
     }
 
     filesSelected(files) {
-        this.selectedFiles = files;
+        let datasetPromises = files.map(file => {
+            return this.$q.resolve(loamOpen(file));
+        });
+        let bandCountPromises = datasetPromises.map(dsPromise => {
+            return this.bandCount(dsPromise);
+        });
+        this.$q.all(bandCountPromises).then(counts => {
+            this.selectedFileDatasets = counts.map((count, index) => {
+                return {
+                    file: files[index],
+                    dataset: datasetPromises[index],
+                    bandCount: count
+                };
+            });
+        });
+    }
+
+    bandCount(datasetPromise) {
+        // If the dataset is invalid, the promise will get rejected, but a rejected promise will
+        // cause the $q.all() call, above, to get rejected completely, when what we really want is
+        // to convert the rejection to a warning. To make this work, the error handler here returns
+        // a -1 value.
+        return datasetPromise.then(
+            ds => this.$q.resolve(ds.count()),
+            () => this.$q.resolve(-1)
+        );
     }
 
     getTotalFileSize() {
-        if (this.selectedFiles.length) {
-            return this.selectedFiles.reduce((acc, f) => {
-                return acc + f.size;
+        if (this.selectedFileDatasets.length) {
+            return this.selectedFileDatasets.reduce((acc, f) => {
+                return acc + f.file.size;
             }, 0);
         }
         return 0;
     }
 
     removeFileAtIndex(index) {
-        this.selectedFiles.splice(index, 1);
+        this.$q.resolve(
+            this.selectedFileDatasets[index].dataset.then(ds => ds.close())
+        ).finally(() => {
+            this.selectedFileDatasets.splice(index, 1);
+            this.selectedFiles.splice(index, 1);
+        });
     }
 
     removeAllFiles() {
+        this.selectedFileDatasets.map((fileDS) => {
+            fileDS.dataset.then(ds => ds.close());
+        });
+        this.selectedFileDatasets = [];
         this.selectedFiles = [];
     }
 
@@ -467,11 +645,29 @@ export default class SceneImportModalController {
     }
 
     allowInterruptions() {
-        if (this.closeCanceller || this.locationChangeCanceller) {
+        if (this.closeCanceller) {
             this.closeCanceller();
             delete this.closeCanceller;
+        }
+        if (this.locationChangeCanceller) {
             this.locationChangeCanceller();
-            delete this.locationChangeCanceller();
+            delete this.locationChangeCanceller;
+        }
+    }
+
+    linkToStatus() {
+        this.handleDone();
+        if (this.resolve.origin === 'project' || this.resolve.origin === 'raster') {
+            this.$state.reload();
+        }
+        if (this.resolve.origin === 'projectCreate') {
+            this.$state.go(
+                'projects.edit.scenes',
+                { projectid: this.resolve.project.id}
+            );
+        }
+        if (this.resolve.origin === 'datasource') {
+            this.$state.go('imports.rasters');
         }
     }
 }

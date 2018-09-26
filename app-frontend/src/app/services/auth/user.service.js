@@ -26,15 +26,34 @@ export default (app) => {
                     }
                 });
             this.User = $resource(`${BUILDCONFIG.API_HOST}/api/users/me`, { }, {
+                get: {
+                    url: `${BUILDCONFIG.API_HOST}/api/users/:userId`,
+                    method: 'GET',
+                    params: {
+                        userId: '@userId'
+                    }
+                },
                 update: {
                     method: 'PUT',
                     cache: false
+                },
+                getTeams: {
+                    url: `${BUILDCONFIG.API_HOST}/api/users/me/teams`,
+                    method: 'GET',
+                    cache: false,
+                    isArray: true
+                },
+                search: {
+                    url: `${BUILDCONFIG.API_HOST}/api/users/search`,
+                    method: 'GET',
+                    cache: false,
+                    isArray: true
                 }
             });
         }
 
         updateUserMetadata(userdata) {
-            let id = this.authService.profile().user_id;
+            let id = this.authService.getProfile().sub;
             return this.UserMetadata.patch(
                 {userid: id},
                 {user_metadata: userdata} // eslint-disable-line camelcase
@@ -45,15 +64,20 @@ export default (app) => {
             }, (err) => err);
         }
 
-        updatePlanetToken(token) {
-            return this.$q((resolve, reject) => {
-                this.authService.getCurrentUser().then((user) => {
-                    user.planetCredential = token;
-                    this.User.update(user).$promise.then(() => {
-                        resolve();
-                    }, (err) => reject(err));
-                }, (err) => reject(err));
-            });
+        updateOwnUser(user) {
+            return this.User.update(user).$promise;
+        }
+
+        getTeams() {
+            return this.User.getTeams().$promise;
+        }
+
+        getUserById(id) {
+            return this.User.get({userId: id}).$promise;
+        }
+
+        searchUsers(searchText) {
+            return this.User.search({search: searchText}).$promise;
         }
     }
 

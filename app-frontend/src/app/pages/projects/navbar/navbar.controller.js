@@ -1,84 +1,51 @@
 export default class ProjectsNavbarController {
-    constructor(projectService, $state, $uibModal) {
+    constructor(projectService, projectEditService, $state, modalService, $scope) {
         'ngInject';
 
         this.projectService = projectService;
+        this.projectEditService = projectEditService;
         this.$state = $state;
-        this.$uibModal = $uibModal;
+        this.modalService = modalService;
+        this.$scope = $scope;
+    }
 
-        this.projectId = this.$state.params.projectid;
-        this.projectService.loadProject(this.projectId)
+    $onInit() {
+        this.isEditingProjectName = false;
+        this.isSavingProjectName = false;
+        this.projectEditService.fetchCurrentProject()
             .then((project) => {
                 this.project = project;
             });
+        this.$scope.$watch('$ctrl.projectEditService.currentProject', (project) => {
+            this.project = project;
+        });
     }
 
-    selectProjectModal() {
-        if (this.activeModal) {
-            this.activeModal.dismiss();
-        }
-
-        this.activeModal = this.$uibModal.open({
-            component: 'rfProjectSelectModal',
-            resolve: {
-                project: () => this.projectService.currentProject
+    toggleProjectNameEdit() {
+        if (this.project) {
+            if (!this.isEditingProjectName) {
+                this.projectEditService.fetchCurrentProject().then((project) => {
+                    this.projectNameBuffer = project.name;
+                    this.isEditingProjectName = !this.isEditingProjectName;
+                });
             }
-        });
-
-        this.activeModal.result.then(p => {
-            this.$state.go(this.$state.$current, { projectid: p.id });
-        });
-
-        return this.activeModal;
+        }
     }
 
-    openPublishModal() {
-        if (this.activeModal) {
-            this.activeModal.dismiss();
-        }
-
-        this.activeModal = this.$uibModal.open({
-            component: 'rfProjectPublishModal',
-            resolve: {
-                project: () => this.project,
-                tileUrl: () => this.projectService.getProjectLayerURL(this.project),
-                shareUrl: () => this.projectService.getProjectShareURL(this.project)
-            }
-        });
-
-        return this.activeModal;
-    }
-
-    deleteProjectModal() {
-        if (this.activeModal) {
-            this.activeModal.dismiss();
-        }
-        this.activeModal = this.$uibModal.open({
-            component: 'rfConfirmationModal',
-            resolve: {
-                title: () => 'Delete Project?',
-                subtitle: () =>
-                    'The project will be permanently deleted,'
-                    + ' but scenes will be unaffected.',
-                content: () =>
-                    '<div class="text-center color-danger">'
-                    + 'You are about to delete the project. This action is not reversible.'
-                    + ' Are you sure you wish to continue?'
-                    + '</div>',
-                confirmText: () => 'Delete Project',
-                cancelText: () => 'Cancel'
-            }
-        });
-        this.activeModal.result.then(
-            () => {
-                this.projectService.deleteProject(this.projectId).then(
-                    () => {
-                        this.$state.go('projects.list');
-                    },
-                    (err) => {
-                        this.$log.debug('error deleting project', err);
-                    }
-                );
+    saveProjectName() {
+        this.isEditingProjectName = false;
+        if (this.project && this.projectNameBuffer) {
+            let lastProjectName = this.project.name;
+            this.isSavingProjectName = true;
+            this.project.name = this.projectNameBuffer;
+            this.projectEditService.updateCurrentProject(this.project).then((project) => {
+                this.project = project;
+            }, () => {
+                // Revert if the update fails
+                this.project.name = lastProjectName;
+            }).finally(() => {
+                this.isSavingProjectName = false;
             });
+        }
     }
 }

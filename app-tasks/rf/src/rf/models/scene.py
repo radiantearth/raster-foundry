@@ -16,17 +16,16 @@ class Scene(BaseModel):
 
     URL_PATH = '/api/scenes/'
 
-    def __init__(self, organizationId, ingestSizeBytes, visibility, tags,
+    def __init__(self, visibility, tags,
                  datasource, sceneMetadata, name, thumbnailStatus, boundaryStatus,
                  ingestStatus, metadataFiles, sunAzimuth=None, sunElevation=None,
                  cloudCover=None, acquisitionDate=None, id=None, thumbnails=None,
                  tileFootprint=None, dataFootprint=None, images=None, createdAt=None,
-                 modifiedAt=None, createdBy=None, modifiedBy=None, ingestLocation=None, owner=None):
+                 modifiedAt=None, createdBy=None, modifiedBy=None, ingestLocation=None,
+                 owner=None, sceneType="AVRO"):
         """Create a new Scene
 
         Args:
-            orgnizationId (str): UUID of organization that this scene belongs to
-            ingestSizeBytes (int): size of ingested (through geotrellis) scene
             visibility (str): level of access to search for/view scene
             tags (List[str]): list of tags for scene
             datasource (str): datasource that scene belongs to
@@ -50,8 +49,6 @@ class Scene(BaseModel):
         self.ingestLocation = ingestLocation
         self.modifiedBy = modifiedBy
         self.createdBy = createdBy
-        self.organizationId = organizationId
-        self.ingestSizeBytes = ingestSizeBytes
         self.visibility = visibility
         self.tags = tags
         self.datasource = datasource
@@ -62,6 +59,7 @@ class Scene(BaseModel):
         self.ingestStatus = ingestStatus
         self.metadataFiles = metadataFiles
         self.owner = owner
+        self.sceneType = sceneType
 
         # Optional - can be None
         self.sunAzimuth = sunAzimuth
@@ -99,13 +97,13 @@ class Scene(BaseModel):
             data_footprint = None
 
         return cls(
-            d.get('organizationId'), d.get('ingestSizeBytes'), d.get('visibility'),
-            d.get('tags'), d.get('datasource'), d.get('sceneMetadata'), d.get('name'), statuses.get('thumbnailStatus'),
+            d.get('visibility'),
+            d.get('tags'), d.get('datasource')['id'], d.get('sceneMetadata'), d.get('name'), statuses.get('thumbnailStatus'),
             statuses.get('boundaryStatus'), statuses.get('ingestStatus'), d.get('metadataFiles'),
             filter_fields.get('sunAzimuth'), filter_fields.get('sunElevation'), filter_fields.get('cloudCover'),
             filter_fields.get('acquisitionDate'), d.get('id'), thumbnails, tile_footprint, data_footprint,
             images, d.get('createdAt'), d.get('modifiedAt'), d.get('createdBy'), d.get('modifiedBy'),
-            d.get('ingestLocation', ''), owner=d.get('owner')
+            d.get('ingestLocation', ''), owner=d.get('owner'), sceneType=d.get('sceneType')
         )
 
     def to_dict(self):
@@ -114,10 +112,10 @@ class Scene(BaseModel):
                             boundaryStatus=self.boundaryStatus,
                             ingestStatus=self.ingestStatus)
         scene_dict = dict(
-            organizationId=self.organizationId, ingestSizeBytes=self.ingestSizeBytes, visibility=self.visibility,
+            visibility=self.visibility,
             tags=self.tags, datasource=self.datasource, sceneMetadata=self.sceneMetadata, filterFields=filterFields,
             name=self.name, statusFields=statusFields, metadataFiles=self.metadataFiles,
-            ingestLocation=self.ingestLocation, owner=self.owner)
+            ingestLocation=self.ingestLocation, owner=self.owner, sceneType=self.sceneType)
 
         if self.sunAzimuth:
             filterFields['sunAzimuth'] = self.sunAzimuth

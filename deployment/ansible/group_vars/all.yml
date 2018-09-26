@@ -1,0 +1,10 @@
+---
+aws_cli_version: "1.14.64"
+
+docker_version: "18.*"
+docker_compose_version: "1.21.*"
+
+shellcheck_version: "0.3.*"
+
+docker_users:
+  - "vagrant"

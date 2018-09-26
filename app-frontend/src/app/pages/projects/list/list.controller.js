@@ -1,65 +1,66 @@
+/* global BUILDCONFIG, HELPCONFIG */
+
 class ProjectsListController {
     constructor( // eslint-disable-line max-params
-        $log, $state, $uibModal, $scope, projectService, userService
+        $log, $state, modalService, $scope,
+        paginationService, projectService, userService, authService, platform, user
     ) {
         'ngInject';
-        this.$log = $log;
-        this.$state = $state;
-        this.$uibModal = $uibModal;
-        this.projectService = projectService;
-        this.userService = userService;
-        this.$scope = $scope;
-
-        this.projectList = [];
-        this.populateProjectList($state.params.page || 1);
+        $scope.autoInject(this, arguments);
     }
 
-    populateProjectList(page) {
-        if (this.loading) {
-            return;
-        }
-        delete this.errorMsg;
-        this.loading = true;
-        this.projectService.query(
-            {
-                sort: 'createdAt,desc',
-                pageSize: 10,
-                page: page - 1
+    $onInit() {
+        this.BUILDCONFIG = BUILDCONFIG;
+        this.HELPCONFIG = HELPCONFIG;
+        // Can be one of {owned, shared}
+        this.currentOwnershipFilter = 'owned';
+        this.fetchPage();
+    }
+
+    fetchPage(page = this.$state.params.page || 1, search = this.$state.params.search) {
+        this.search = search && search.length ? search : null;
+        delete this.fetchError;
+        this.results = [];
+        let currentQuery = this.projectService.query({
+            sort: 'createdAt,desc',
+            pageSize: 10,
+            page: page - 1,
+            ownershipType: this.currentOwnershipFilter,
+            search: this.search
+        }).then(paginatedResponse => {
+            this.results = paginatedResponse.results;
+            this.results.forEach((project) => {
+                this.getProjectScenesCount(project);
+            });
+            this.pagination = this.paginationService.buildPagination(paginatedResponse);
+            this.paginationService.updatePageParam(page, this.search);
+            if (this.currentQuery === currentQuery) {
+                delete this.fetchError;
             }
-        ).then(
-            (projectResult) => {
-                this.lastProjectResult = projectResult;
-                this.numPaginationButtons = 6 - projectResult.page % 10;
-                if (this.numPaginationButtons < 3) {
-                    this.numPaginationButtons = 3;
-                }
-                this.currentPage = projectResult.page + 1;
-                let replace = !this.$state.params.page;
-                this.$state.transitionTo(
-                    this.$state.$current.name,
-                    {page: this.currentPage},
-                    {
-                        location: replace ? 'replace' : true,
-                        notify: false
-                    }
-                );
-                this.projectList = this.lastProjectResult.results;
-                this.loading = false;
-                this.projectList.forEach((project) => {
-                    this.getProjectScenesCount(project);
-                });
-            },
-            () => {
-                this.errorMsg = 'Server error.';
-                this.loading = false;
+        }, (e) => {
+            if (this.currentQuery === currentQuery) {
+                this.fetchError = e;
             }
-        );
+        }).finally(() => {
+            if (this.currentQuery === currentQuery) {
+                delete this.currentQuery;
+            }
+        });
+        this.currentQuery = currentQuery;
+    }
+
+    shouldShowPlaceholder() {
+        return !this.currentQuery &&
+            !this.fetchError &&
+            (!this.search || !this.search.length) &&
+            this.pagination &&
+            this.pagination.count === 0;
     }
 
     getProjectScenesCount(project) {
         this.projectService.getProjectSceneCount({projectId: project.id}).then(
             (sceneResult) => {
-                let bupdate = this.projectList.find((b) => b.id === project.id);
+                let bupdate = this.results.find((b) => b.id === project.id);
                 bupdate.scenes = sceneResult.count;
             }
         );
@@ -70,21 +71,19 @@ class ProjectsListController {
     }
 
     createNewProject() {
-        if (this.newProjectModal) {
-            this.newProjectModal.dismiss();
-        }
-
-        this.newProjectModal = this.$uibModal.open({
+        const modal = this.modalService.open({
             component: 'rfProjectCreateModal'
         });
 
-        this.newProjectModal.result.then((data) => {
+        modal.result.then((data) => {
             if (data && data.reloadProjectList) {
-                this.populateProjectList(1);
+                this.fetchPage(1);
             }
         });
+    }
 
-        return this.newProjectModal;
+    handleOwnershipFilterChange(newFilterValue) {
+        this.fetchPage(1);
     }
 }
 

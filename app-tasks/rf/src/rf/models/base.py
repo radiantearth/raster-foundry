@@ -50,6 +50,8 @@ class BaseModel(object):
             response.raise_for_status()
         except:
             logger.exception('Unable to create object via API: %s', response.text)
+            logger.exception('Attempted to POST: \n%s\n', self.to_json())
+            logger.exception('Response was: %s', response.content)
             raise
         return self.from_dict(response.json())
 
@@ -60,6 +62,6 @@ class BaseModel(object):
         try:
             response.raise_for_status()
         except:
-            logger.exception('Unable to update: %s', response.text)
+            logger.exception('Unable to update: %s with %s', response.text, self.to_dict())
             raise
         return response

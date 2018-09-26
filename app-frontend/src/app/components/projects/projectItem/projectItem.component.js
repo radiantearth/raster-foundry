@@ -9,7 +9,9 @@ const rfProjectItem = {
         project: '<',
         selected: '&',
         onSelect: '&',
-        slim: '<'
+        slim: '<',
+        hideOptions: '<',
+        platform: '<'
     }
 };
 

@@ -16,8 +16,10 @@ const DEVELOPMENT = NODE_ENV === 'production' ? false : true;
 const stylesLoader = 'css-loader?sourceMap!postcss-loader!sass-loader?' +
         'outputStyle=expanded&sourceMap=true&sourceMapContents=true';
 
-const HERE_APP_ID = 'mXP4DZFBZGyBmuZBKNeo';
-const HERE_APP_CODE = 'kBWb6Z7ZLcuQanT_RoP60A';
+const HERE_APP_ID = 'v88MqS5fQgxuHyIWJYX7';
+const HERE_APP_CODE = '5pn07ENomTHOap0u7nQSFA';
+
+const INTERCOM_APP_ID = '';
 
 const basemaps = JSON.stringify({
     layers: {
@@ -94,9 +96,15 @@ module.exports = function (_path) {
             modulesDirectories: ['node_modules'],
             alias: {
                 _appRoot: path.join(_path, 'src', 'app'),
-                _images: path.join(_path, 'src', 'app', 'assets', 'images'),
-                _stylesheets: path.join(_path, 'src', 'app', 'assets', 'styles'),
-                _scripts: path.join(_path, 'src', 'app', 'assets', 'js')
+                _stylesheets: path.join(_path, 'src', 'assets', 'styles'),
+                _api: path.join(_path, 'src', 'app', 'api'),
+                _redux: path.join(_path, 'src', 'app', 'redux'),
+                _assets: path.join(_path, 'src', 'assets'),
+                _scripts: path.join(_path, 'src', 'assets', 'js'),
+                _images: path.join(_path, 'src', 'assets', 'images'),
+                _font: path.join(_path, 'src', 'assets', 'font'),
+                loamLib: path.join(_path, 'node_modules', 'loam', 'lib'),
+                gdalJs: path.join(_path, 'node_modules', 'gdal-js')
             }
         },
 
@@ -151,7 +159,7 @@ module.exports = function (_path) {
                 loader: DEVELOPMENT ? 'style-loader!' + stylesLoader
                     : ExtractTextPlugin.extract('style-loader', stylesLoader)
             }, {
-                test: /\.(woff2|woff|ttf|eot|svg)(\?[0-9]+)?(#[0-9a-zA-Z]+)?$/,
+                test: /\.(woff2|woff|ttf|eot|svg)(\?[a-z0-9]+)?$/,
                 loaders: [
                     'url-loader?name=assets/fonts/[name]_[hash].[ext]'
                 ]
@@ -165,6 +173,9 @@ module.exports = function (_path) {
                 loaders: [
                     'url-loader?name=assets/video/[name]_[hash].[ext]&limit=10000'
                 ]
+            }, {
+                test: /(loam-worker\.js|gdal\.js|gdal\.wasm|gdal\.data)$/,
+                loader: 'file-loader?name=[name].[ext]'
             }, {
                 test: require.resolve('angular-deferred-bootstrap'),
                 loaders: [
@@ -202,6 +213,17 @@ module.exports = function (_path) {
                     'expose?mathjs'
                 ]
             }, {
+                test: require.resolve('loam'),
+                loaders: [
+                    'expose?loam'
+                ]
+            }, {
+                test: /node_modules[\\\/]auth0-js[\\\/].*\.js$/,
+                loaders: ['transform-loader/cacheable?brfs',
+                          'transform-loader/cacheable?packageify',
+                          'babel-loader?presets[]=latest'
+                         ]
+            }, {
                 test: /node_modules[\\\/]auth0-lock[\\\/].*\.js$/,
                 loaders: ['transform-loader/cacheable?brfs',
                           'transform-loader/cacheable?packageify']
@@ -214,8 +236,12 @@ module.exports = function (_path) {
             }]
         },
 
-        // post css
-        postcss: [autoprefixer({browsers: ['last 5 versions']})],
+        // post css.
+        // TODO This should be
+        // ['>0.25%', 'not ie 11', 'not op_mini all']
+        // see https://jamie.build/last-2-versions
+        // this doesn't seem to be compatible with the loader version that we're using
+        postcss: [autoprefixer({browsers: ['last 2 versions']})],
 
         imageWebpackLoader: {
             pngquant: {
@@ -256,15 +282,31 @@ module.exports = function (_path) {
                 filename: 'index.html',
                 template: path.join(_path, 'src', 'tpl-index.html'),
                 heapLoad: DEVELOPMENT ? '2743344218' : '3505855839',
-                development: DEVELOPMENT
+                development: DEVELOPMENT,
+                APP_NAME: 'Raster Foundry'
             }),
             new webpack.DefinePlugin({
                 'BUILDCONFIG': {
-                    APP_NAME: '\'RasterFoundry\'',
+                    APP_NAME: JSON.stringify('Raster Foundry'),
                     BASEMAPS: basemaps,
-                    API_HOST: '\'\'',
-                    HERE_APP_ID: '\'' + HERE_APP_ID + '\'',
-                    HERE_APP_CODE: '\'' + HERE_APP_CODE + '\''
+                    API_HOST: JSON.stringify(''),
+                    HERE_APP_ID: JSON.stringify(HERE_APP_ID),
+                    HERE_APP_CODE: JSON.stringify(HERE_APP_CODE),
+                    INTERCOM_APP_ID: JSON.stringify(INTERCOM_APP_ID),
+                    THEME: JSON.stringify('default'),
+                    AUTH0_PRIMARY_COLOR: JSON.stringify('#465076'),
+                    LOGOFILE: JSON.stringify('raster-foundry-logo.svg'),
+                    LOGOURL: JSON.stringify(false),
+                    FAVICON_DIR: JSON.stringify('/favicon'),
+                    FEED_SOURCE: JSON.stringify('https://blog.rasterfoundry.com/latest?format=json'),
+                    MAP_CENTER: JSON.stringify([-6.8, 39.2]),
+                    MAP_ZOOM: 5
+                },
+                'HELPCONFIG': {
+                    API_DOCS_URL: JSON.stringify('https://docs.rasterfoundry.com/'),
+                    HELP_HOME: JSON.stringify('https://help.rasterfoundry.com/'),
+                    GETTING_STARTED_WITH_PROJECTS: JSON.stringify('https://help.rasterfoundry.com/creating-projects'),
+                    DEVELOPER_RESOURCES: JSON.stringify('https://help.rasterfoundry.com/developer-resources')
                 }
             })
         ]

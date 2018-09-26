@@ -1,132 +1,45 @@
 <div class="sidebar-header dark">
   <h5>Filters</h5>
   <div class="header-controls">
-    <button class="btn btn-default btn-small" ng-click="$ctrl.close()">
+    <button type="button"
+            class="btn btn-default btn-small"
+            ng-show="!$ctrl.settingRepository"
+            ng-click="$ctrl.resetFilters()">
+      Reset Filters
+    </button>
+    <button class="btn btn-default btn-small"
+            ng-click="$ctrl.onClose()">
       Close
     </button>
   </div>
 </div>
-<div class="sidebar-scrollable" >
-  <div class="content">
+<div class="sidebar-scrollable">
+  <div class="content" feature-flag="external-source-browse">
     <div class="filter-group">
       <div class="filter">
-        <button ng-click="$ctrl.resetAllFilters()" class="btn btn-toggle btn-small btn-block">Clear all filters</button>
-      </div>
-    </div>
-    <div class="filter-group">
-      <div class="filter">
-        <label>Date Range</label>
-        <div class="flex-fill"
-             ng-class="{'color-white': $ctrl.dateFilterToggle.value}">
-          <span ng-if="$ctrl.datefilterPreset">{{$ctrl.datefilterPreset}}</span>
-          <span ng-if="!$ctrl.datefilterPreset">{{$ctrl.datefilter.start.calendar()}} to {{$ctrl.datefilter.end.calendar()}}</span>
+        <label>Repository</label>
+        <div class="btn-group" uib-dropdown keyboard-nav ng-show="!$ctrl.settingRepository">
+          <button type="button" class="btn btn-default browse-source-drop-down" uib-dropdown-toggle>
+            {{$ctrl.currentRepository.overrideLabel || $ctrl.currentRepository.label}}
+            <i class="icon-caret-down"></i>
+          </button>
+          <ul class="dropdown-menu" uib-dropdown-menu role="menu">
+            <li role="menuitem"
+                ng-repeat="repository in $ctrl.repositories"
+                ng-click="$ctrl.setRepository(repository)">
+              <a>{{repository.overrideLabel || repository.label}}</a>
+            </li>
+          </ul>
         </div>
-      </div>
-      <div class="filter">
-        <label></label>
-        <button class="btn btn-small btn-primary flex-fill"
-                ng-click="$ctrl.openDateRangePickerModal()"
-                ng-class="{'disabled': !$ctrl.dateFilterToggle.value}">Select a Date</button>
-
-      </div>
-      <div class="filter-group-option">
-        <label>Enabled</label>
-        <rf-toggle-old data-model="$ctrl.dateFilterToggle.value"
-                       on-change="$ctrl.onDateFilterToggle(value)"
-        ></rf-toggle-old>
-      </div>
-    </div>
-    <div class="filter-group">
-      <div class="filter">
-        <label>Cloud cover</label>
-        <rzslider rz-slider-model="$ctrl.cloudCoverFilters.minModel"
-                  rz-slider-high="$ctrl.cloudCoverFilters.maxModel"
-                  rz-slider-options="$ctrl.cloudCoverFilters.options"></rzslider>
-      </div>
-    </div>
-    <div class="filter-group">
-      <div class="filter">
-        <label>Sun elevation</label>
-        <rzslider rz-slider-model="$ctrl.sunElevationFilters.minModel"
-                  rz-slider-high="$ctrl.sunElevationFilters.maxModel"
-                  rz-slider-options="$ctrl.sunElevationFilters.options"></rzslider>
-      </div>
-    </div>
-    <div class="filter-group">
-      <div class="filter">
-        <label>Sun azimuth</label>
-        <rzslider rz-slider-model="$ctrl.sunAzimuthFilters.minModel"
-                  rz-slider-high="$ctrl.sunAzimuthFilters.maxModel"
-                  rz-slider-options="$ctrl.sunAzimuthFilters.options"></rzslider>
-      </div>
-    </div>
-    <div class="filter-group">
-      <div class="filter"
-          ng-mouseleave="$ctrl.toggleDrag.toggle = false"
-          ng-mouseup="$ctrl.toggleDrag.toggle = false">
-        <label>Ingest Status</label>
-        <div class="filter-item tag-filter">
-          <div class="btn-group">
-            <button type="button"
-                    class="btn btn-toggle btn-small"
-                    ng-class="{'active': $ctrl.ingestFilter === 'any'}"
-                    ng-click="$ctrl.setIngestFilter('any')">
-              Show All
-            </button>
-            <button type="button"
-                    class="btn btn-toggle btn-small"
-                    ng-class="{'active': $ctrl.ingestFilter === 'uningested'}"
-                    ng-click="$ctrl.setIngestFilter('uningested')">
-              Uningested Only
-            </button>
-            <button type="button"
-                    class="btn btn-toggle btn-small"
-                    ng-class="{'active': $ctrl.ingestFilter === 'ingested'}"
-                    ng-click="$ctrl.setIngestFilter('ingested')">
-              Ingested Only
-            </button>
-          </div>
+        <div class="btn-group" ng-show="$ctrl.settingRepository">
+          <button type="button" class="btn btn-default browse-source-drop-down" disabled="true">
+            Changing Repository
+            <i class="icon-load animate-spin" ng-class="{'stop': !$ctrl.settingRepository}"></i>
+          </button>
         </div>
       </div>
     </div>
-    <div class="filter-group">
-      <div class="filter"
-          ng-mouseleave="$ctrl.toggleDrag.toggle = false"
-          ng-mouseup="$ctrl.toggleDrag.toggle = false">
-        <label>Imagery sources</label>
-        <input type="text"
-               placeholder="None"
-               ng-model="$ctrl.selectedDatasource"
-               uib-typeahead="ds.name for ds in $ctrl.datasources | filter:$viewValue | limitTo:8"
-               class="form-control input-dark"
-               typeahead-on-select="$ctrl.toggleSourceFilter($item)"
-               typeahead-min-length="0">
-      </div>
-      <div ng-if="$ctrl.selectedDatasource"
-           ng-click="$ctrl.clearDatasourceFilter()">
-        Clear
-      </div>
-    </div>
-    <div class="filter-group">
-      <div class="filter">
-        <label>Owner</label>
-        <div class="filter-item tag-filter">
-          <div class="btn-group">
-            <button type="button"
-                    class="btn btn-toggle btn-small"
-                    ng-class="{'active': $ctrl.importOwnerFilter === 'any'}"
-                    ng-click="$ctrl.setImportOwnerFilter('any')">
-              All Users
-            </button>
-            <button type="button"
-                    class="btn btn-toggle btn-small"
-                    ng-class="{'active': $ctrl.importOwnerFilter === 'user'}"
-                    ng-click="$ctrl.setImportOwnerFilter('user')">
-              My Imports
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+  </div>
+  <div id="filters" class="content">
   </div>
 </div>

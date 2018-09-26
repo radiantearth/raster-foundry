@@ -5,9 +5,10 @@ import java.net.URI
 import scala.util._
 
 object CommandLine {
-  case class Params(
-    jobDefinition: URI = new URI(""),
-    statusBucket: String = "rasterfoundry-dataproc-export-status-us-east-1"
+
+  final case class Params(
+      jobDefinition: URI = new URI(""),
+      statusURI: URI = new URI("")
   )
 
   // Used for reading text in as URI
@@ -20,13 +21,13 @@ object CommandLine {
 
     head("raster-foundry-export", "0.1")
 
-    opt[URI]('j',"jobDefinition")
+    opt[URI]('j', "jobDefinition")
       .action((jd, conf) => conf.copy(jobDefinition = jd))
       .text("The location of the json which defines an ingest job")
       .required
 
-    opt[String]('b',"statusBucket")
-      .action( (s, conf) => conf.copy(statusBucket = s) )
-      .text("S3 bucket to write status jsons to")
+    opt[URI]('b', "statusURI")
+      .action((s, conf) => conf.copy(statusURI = s))
+      .text("S3 URI to write status jsons to")
   }
 }

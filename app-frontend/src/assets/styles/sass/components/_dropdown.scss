@@ -11,6 +11,7 @@
 // Prevent the focus on the dropdown toggle when closing dropdowns
 .dropdown-toggle:focus {
   outline: 0;
+  box-shadow: 0 0 0 3px rgba($brand-primary, .3);
 }
 
 // The dropdown menu (ul)
@@ -31,6 +32,7 @@
   border-radius: 0 0 $border-radius-base $border-radius-base;
   box-shadow: 0 6px 12px rgba(0, 0, 0, .1);
   background-clip: padding-box;
+  font-size: 1.3rem;
 
   // Dividers (basically an hr) within the dropdown
   .divider {
@@ -41,7 +43,8 @@
   }
 
   // Links within the dropdown menu
-  > li > a {
+  > li > a,
+  .dropdown-item {
     display: block;
     padding: .5rem 1rem;
     clear: both;
@@ -200,6 +203,11 @@
   // Added to handle non-float navbar
   .navbar-section .dropdown-menu {
     right: auto; left: 1rem;
+
+    &.dropdown-menu-right {
+      right: 0;
+      left: auto;
+    }
   }
 }
 
@@ -234,4 +242,32 @@
 
     }
   }
+}
+
+/*
+ * rf-dropdown classes
+*/
+.rf-dropdown {
+    min-width: 10em;
+    position: absolute;
+    bottom: 0;
+    transform: translateY(100%);
+    background: $white;
+    border: 1px solid $shade-light;
+    border-radius: 3px 0 3px 3px;
+    z-index: 100;
+    white-space: nowrap;
+
+    .rf-dropdown-item {
+        text-align: left;
+        padding: 0.66em 1em;
+        cursor: pointer;
+        &.divider {
+          padding: 0;
+          border-bottom: 1px solid $shade-light;
+        }
+        &:hover {
+            color: $brand-primary;
+        }
+    }
 }

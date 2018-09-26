@@ -1,10 +1,13 @@
-<div class="color-correct-pane flex-column sidebar-dark flex-fill">
-  <div class="sidebar-header dark">
-    <a href ng-click="$ctrl.$parent.resetCorrection()" class="link-histogram-reset">
-      Reset Changes
+<div class="color-correct-pane flex-column sidebar-dark">
+  <div class="sidebar-header">
+    <a class="btn sidebar-header-nav-btn" ui-sref="projects.edit.advancedcolor">
+      <i class="icon-arrow-left"></i>
     </a>
+    <h5 class="sidebar-title">Advanced Color Correction</h5>
     <div class="header-controls">
-      <a href class="btn btn-default btn-small" ui-sref="projects.edit.advancedcolor">Back</a>
+      <button class="btn btn-ghost btn-small link-histogram-reset"
+                type="button"
+                ng-click="$ctrl.$parent.resetCorrection()">Reset Changes</button>
     </div>
   </div>
   <div class="sidebar-scrollable">
@@ -29,6 +32,18 @@
                               on-change="$ctrl.onHistogramChange(clipping)"
                               corrections="$ctrl.correction">
         </rf-channel-histogram>
+        <div class="histogram-overlay" ng-show="$ctrl.loadingHistogram || !$ctrl.histogramData.length">
+          <div class="list-group" ng-show="!$ctrl.loadingHistogram && $ctrl.histogramData && !$ctrl.histogramData.length">
+            Scenes in this project do not support histograms,<br />
+            or they contain no data.<br />
+            Cloud optimized geotif support is coming soon.
+          </div>
+          <div class="list-group" ng-show="!$ctrl.histogramData || $ctrl.loadingHistogram">
+            <span class="list-placeholder">
+              <i class="icon-load animate-spin" ng-class="{'stop': $ctrl.histogramData && !$ctrl.loadingHistogram}"></i>
+            </span>
+          </div>
+        </div>
       </div>
 
         <!-- Color Correction -->
@@ -36,8 +51,7 @@
         <div class="filter-group">
           <div class="filter-group-header">
             <rf-toggle-old data-model="$ctrl.correction.sigmoidalContrast.enabled"
-                       on-change="$ctrl.storeToggle(value, 'sigmoidalContrast')">
-              <i class="icon-check"></i>
+                       on-change="$ctrl.storeToggle(value, 'sigmoidalContrast', ['alpha', 'beta'])">
             </rf-toggle-old>
             <h5>Sigmoidal Contrast</h5>
             <i class="icon-info"
@@ -88,8 +102,7 @@
         <div class="filter-group">
           <div class="filter-group-header">
             <rf-toggle-old data-model="$ctrl.correction.gamma.enabled"
-                       on-change="$ctrl.storeToggle(value, 'gamma')">
-              <i class="icon-check"></i>
+                       on-change="$ctrl.storeToggle(value, 'gamma', ['redGamma', 'greenGamma', 'blueGamma'])">
             </rf-toggle-old>
             <h5>Color Balance</h5>
             <i class="icon-info"
@@ -159,7 +172,7 @@
             </div>
             <div class="filter-group-option">
               <label class="color-white">Link Sliders</label>
-              <rf-toggle-old data-model="$ctrl.gammaLinkToggle" on-change="$ctrl.gammaLinkToggled()"><i class="icon-check"></i></rf-toggle-old>
+              <rf-toggle-old data-model="$ctrl.gammaLinkToggle" on-change="$ctrl.gammaLinkToggled()"></rf-toggle-old>
             </div>
           </div>
         </div>
@@ -168,8 +181,7 @@
         <div class="filter-group">
           <div class="filter-group-header">
             <rf-toggle-old data-model="$ctrl.correction.saturation.enabled"
-                       on-change="$ctrl.storeToggle(value, 'saturation')">
-              <i class="icon-check"></i>
+                       on-change="$ctrl.storeToggle(value, 'saturation', ['saturation'])">
             </rf-toggle-old>
             <h5 class="h5">Saturation</h5>
           </div>

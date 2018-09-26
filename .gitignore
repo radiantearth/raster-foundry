@@ -51,6 +51,7 @@ npm-debug.log
 \#*#
 *~
 .#*
+TAGS
 
 # Vim
 .*.swp
@@ -64,6 +65,7 @@ npm-debug.log
 
 # sbt specific
 .cache
+.coursier-cache
 .history
 .lib/
 dist/*
@@ -92,15 +94,17 @@ api-server/.ensime_cache/*
 .sbt/
 
 /.env
+/.envrc
 
 .node_modules
 dist/
 
 /data
-/app-tasks/usr/local/airflow/logs/
-/app-tasks/usr/local/airflow/airflow-webserver.pid
-/app-tasks/usr/local/airflow/unittests.cfg
 .idea
 .ensime_cache
 /app-tasks/jars/rf-batch.jar
 /data
+
+# Patch files
+*.patch
+scratch/

@@ -10,11 +10,17 @@ import scala.concurrent.duration._
 object Config {
   private val config = ConfigFactory.load()
 
-  object airflow {
-    private val airflowConfig = config.getConfig("airflow")
+  object awsbatch {
+    private val awsBatchConfig = config.getConfig("awsbatch")
+    val jobQueue = awsBatchConfig.getString("jobQueue")
+    val ingestJobQueue = awsBatchConfig.getString("ingestJobQueue")
 
-    val baseUrl = airflowConfig.getString("baseURL")
+    val ingestJobName = awsBatchConfig.getString("ingestJobName")
+    val importJobName = awsBatchConfig.getString("importJobName")
+    val exportJobName = awsBatchConfig.getString("exportJobName")
+    val aoiUpdateJobName = awsBatchConfig.getString("aoiUpdateJobName")
 
+    val environment = awsBatchConfig.getString("environment")
   }
 
   object memcached {
@@ -41,6 +47,15 @@ object Config {
     lazy val enabled: Boolean =
       memcachedConfig.getBoolean("enabled")
 
+    lazy val keySize: Int =
+      memcachedConfig.getInt("keySize")
+
+    lazy val localCacheEnabled: Boolean =
+      memcachedConfig.getBoolean("localCache.enabled")
+
+    lazy val localCacheSize: Int =
+      memcachedConfig.getInt("localCache.size")
+
     object layerAttributes {
       lazy val enabled: Boolean =
         memcachedConfig.getBoolean("layerAttributes.enabled")
@@ -61,10 +76,13 @@ object Config {
   object geotrellis {
     private lazy val geotrellisConfig = config.getConfig("geotrellis")
 
-    lazy val postgresAttributeStoreThreads: Int = geotrellisConfig.getInt("attributeStore.postgres.threads")
+    lazy val postgresAttributeStoreThreads: Int =
+      geotrellisConfig.getInt("attributeStore.postgres.threads")
 
     lazy val postgresAttributeStoreTimeout: FiniteDuration =
-      FiniteDuration(geotrellisConfig.getDuration("attributeStore.postgres.timeout").toNanos, TimeUnit.NANOSECONDS)
+      FiniteDuration(
+        geotrellisConfig.getDuration("attributeStore.postgres.timeout").toNanos,
+        TimeUnit.NANOSECONDS)
   }
 
 }

@@ -23,9 +23,9 @@ import 'angular-touch';
 import 'angular-sanitize';
 import 'angular-messages';
 import 'angular-aria';
+import 'ng-redux';
 import 'angular-resource';
 import 'leaflet';
-import 'svg-pan-zoom';
 import 'jointjs';
 import 'angular-load';
 import 'ng-rollbar';
@@ -34,7 +34,9 @@ import 'angular-filter';
 import 'angular-tooltips';
 import 'mathjs';
 import 'angular-uuid4';
-import 'angucomplete-alt';
+import 'angular-hotkeys';
+import 'ui-select';
+import 'angular-ui-tree';
 
 // local scripts
 // import '../assets/js/...';

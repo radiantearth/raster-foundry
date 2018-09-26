@@ -1,7 +1,6 @@
 # Factory to create Raster Foundry scenes from Planet Labs scenes
 import logging
 import os
-import tempfile
 import time
 from xml.dom import minidom
 
@@ -9,7 +8,9 @@ import boto3
 import requests
 from retrying import retry
 
-from rf.utils.io import IngestStatus, Visibility, delete_file
+from rf.uploads.geotiff.utils import convert_to_cog
+from rf.uploads.landsat8.io import get_tempdir
+from rf.utils.io import Visibility
 from .create_scenes import create_planet_scene
 
 logger = logging.getLogger(__name__)
@@ -26,10 +27,9 @@ class PlanetSceneFactory(object):
     ```
     """
 
-    def __init__(self, planet_ids, datasource, organization_id, upload_id,
+    def __init__(self, planet_ids, datasource, upload_id, client,
                  project_id=None, visibility=Visibility.PRIVATE, tags=[],
-                 owner=None, client=None):
-        self.organizationId = organization_id
+                 owner=None):
         self.upload_id = upload_id
         self.isProjectUpload = project_id is not None
         self.datasource = datasource
@@ -44,21 +44,18 @@ class PlanetSceneFactory(object):
         # ingest status to TOBEINGESTED so that scene creation will kick off
         # an ingest. Otherwise, set the status to NOTINGESTED, so that the status
         # will be updated when the scene is added to this upload's project
-        if self.isProjectUpload:
-            ingest_status = IngestStatus.NOTINGESTED
-        else:
-            ingest_status = IngestStatus.TOBEINGESTED
         for planet_id in set(self.planet_ids):
-            planet_feature, temp_tif_file = self.copy_asset_to_s3(planet_id)
-            planet_key = self.client.auth.value
-            planet_scene = create_planet_scene(
-                planet_feature, self.datasource, self.organizationId, planet_key,
-                ingest_status, self.visibility, self.tags, self.owner
-            )
-            delete_file(temp_tif_file)
-            yield planet_scene
+            logger.info('Preparing to copy planet asset to s3: %s', planet_id)
+            with get_tempdir() as prefix:
+                planet_feature, temp_tif_file = self.copy_asset_to_s3(prefix, planet_id)
+                planet_key = self.client.auth.value
+                planet_scene = create_planet_scene(
+                    planet_feature, self.datasource, planet_key,
+                    self.visibility, self.tags, self.owner
+                )
+                yield planet_scene
 
-    def copy_asset_to_s3(self, planet_id):
+    def copy_asset_to_s3(self, prefix, planet_id):
         """Make the Planet tif available to Rater Foundry
 
         This function downloads the basic analytic tif from planet,
@@ -72,6 +69,7 @@ class PlanetSceneFactory(object):
         """
 
         item_type, item_id = planet_id.split(':')
+        logger.info('Retrieving item type %s with id %s', item_type, item_id)
         item = self.get_item(item_id, item_type)
         item_id = item['id']
 
@@ -79,15 +77,16 @@ class PlanetSceneFactory(object):
         asset_type = PlanetSceneFactory.get_asset_type(assets)
         updated_assets = self.activate_asset_and_wait(asset_type, assets, item_id, item_type)
 
-        temp_tif_file = self.download_planet_tif(asset_type, updated_assets, item_id)
-        bucket, s3_path = self.upload_planet_tif(asset_type, item_id, item_type, temp_tif_file)
+        temp_tif_file = self.download_planet_tif(prefix, asset_type, updated_assets, item_id)
+        cog_path = convert_to_cog(prefix, temp_tif_file)
+        bucket, s3_path = self.upload_planet_tif(asset_type, item_id, item_type, cog_path)
 
         analytic_xml = self.get_analytic_xml(assets, item_id, item_type)
         reflectance_coefficients = PlanetSceneFactory.get_reflectance_coefficients(analytic_xml)
         item['properties'].update(reflectance_coefficients)
 
         item['added_props'] = {}
-        item['added_props']['localPath'] = temp_tif_file
+        item['added_props']['localPath'] = cog_path
         item['added_props']['s3Location'] = 's3://{}/{}'.format(bucket, s3_path)
 
         # Return the json representation of the item
@@ -118,6 +117,7 @@ class PlanetSceneFactory(object):
         Returns:
             dict
         """
+        logger.info('Requesting asset from Planet: %s, %s', item_id, item_type)
         assets = self.client.get_assets_by_id(item_type, item_id).get()
         return assets
 
@@ -132,8 +132,9 @@ class PlanetSceneFactory(object):
         Returns:
             item
         """
-        item = self.client.get_item(item_type, item_id).get()
-        return item
+        item = self.client.get_item(item_type, item_id)
+        logger.info('Retrieved Item: %s', item)
+        return item.get()
 
     @retry(wait_fixed=5000, stop_max_attempt_number=5)
     def activate(self, asset_type, assets):
@@ -198,7 +199,7 @@ class PlanetSceneFactory(object):
         Returns:
             str
         """
-        acceptable_types = ['analytic', 'basic_analytic']
+        acceptable_types = ['analytic', 'basic_analytic', 'analytic_dn', 'basic_analytic_dn']
         logger.info('Determining Analytics Asset Type')
         for acceptable_type in acceptable_types:
             if acceptable_type in asset_dict:
@@ -230,7 +231,7 @@ class PlanetSceneFactory(object):
         logger.info('Asset activated: %s', item_id)
         return assets
 
-    def download_planet_tif(self, asset_type, assets, item_id):
+    def download_planet_tif(self, prefix, asset_type, assets, item_id):
         """Downloads asset to local filesystem, returns path
 
         Args:
@@ -242,19 +243,20 @@ class PlanetSceneFactory(object):
             str
         """
 
-        _, temp_tif_file = tempfile.mkstemp()
-        logger.info('Downloading asset: %s to %s', item_id, temp_tif_file)
+        base_fname = '{}.tif'.format(item_id)
+        out_path = os.path.join(prefix, base_fname)
+        logger.info('Downloading asset: %s to %s', item_id, out_path)
 
         try:
             body = self.download_asset(asset_type, assets)
-        except:
+        except Exception:
             logger.exception('Failed to download asset %s with %s', asset_type, assets)
             raise
 
-        with open(temp_tif_file, 'wb') as outf:
+        with open(out_path, 'wb') as outf:
             body.write(file=outf)
 
-        return temp_tif_file
+        return base_fname
 
     def upload_planet_tif(self, asset_type, item_id, item_type, temp_tif_file):
         """Uploads planet tif to S3 -- returns bucket and path of tile

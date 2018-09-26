@@ -1,0 +1,34 @@
+<!-- Static Sidebar -->
+<div class="sidebar-project">
+  <div class="sidebar-header">
+    <a class="btn sidebar-header-nav-btn" ui-sref="projects.edit.annotate">
+      <i class="icon-arrow-left"></i>
+    </a>
+    <h5 class="sidebar-title">Export Annotations</h5>
+  </div>
+  <div class="list-group">
+    <div class="list-group-item">
+      <label>Export Format:</lable>
+      <select class="form-control"
+              ng-init="$ctrl.exportType = 'GeoJSON'"
+              ng-model="$ctrl.exportType">
+        <option value="GeoJSON">GeoJSON</option>
+        <option value="Shapefile" ng-if="$ctrl.hasShapefile">Shapefile</option>
+      </select>
+    </div>
+    <div class="list-group-item" ng-if="$ctrl.exportType === 'GeoJSON'">
+      <input type="text"
+             ng-model="$ctrl.fileName"
+             class="form-control"
+             placeholder="File Name">
+    </div>
+    <div class="list-group-item">
+      <button class="btn btn-primary btn-block"
+              type="button"
+              ng-click="$ctrl.onExportClick($event)"
+              ng-disabled="$ctrl.exportType === 'GeoJSON' && !$ctrl.fileName">
+        Export
+      </button>
+    </div>
+  </div>
+</div>

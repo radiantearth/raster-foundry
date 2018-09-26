@@ -2,10 +2,12 @@
 
 export default (app) => {
     class TokenService {
-        constructor($resource, $q, $log) {
+        constructor($resource, $q, $log, APP_CONFIG, authService) {
             'ngInject';
             this.$q = $q;
             this.$log = $log;
+            this.APP_CONFIG = APP_CONFIG;
+            this.authService = authService;
 
             this.ApiToken = $resource(
                 `${BUILDCONFIG.API_HOST}/api/tokens/:id`, {
@@ -41,6 +43,35 @@ export default (app) => {
                         method: 'PUT'
                     }
                 });
+
+            this.analysisMapToken = $resource(
+                `${BUILDCONFIG.API_HOST}/api/map-tokens/`, {}, {
+                    create: {
+                        method: 'POST'
+                    },
+                    get: {
+                        method: 'GET'
+                    }
+                }
+            );
+
+            this.auth0Token = $resource(
+                `https://${APP_CONFIG.auth0Domain}/oauth/token`,
+                {}, {
+                    create: {
+                        method: 'POST'
+                    }
+                }
+            );
+        }
+
+        createApiToken(code) {
+            return this.auth0Token.create({
+                'grant_type': 'authorization_code',
+                'client_id': this.APP_CONFIG.clientId,
+                'redirect_uri': `${this.authService.getBaseURL()}/user/me/settings/api-tokens`,
+                code
+            }).$promise;
         }
 
         queryApiTokens(params = {}) {
@@ -68,23 +99,59 @@ export default (app) => {
         }
 
         getOrCreateProjectMapToken(project) {
+            return this.$q((resolve, reject) => {
+                this.queryMapTokens({project: project.id}).then((response) => {
+                    let token = response.results.find((el) => el.name === project.name);
+                    if (token) {
+                        resolve(token);
+                    } else {
+                        this.createMapToken({
+                            name: project.name,
+                            project: project.id,
+                            organizationId: project.organizationId
+                        }).then((res) => {
+                            // TODO: Toast this
+                            this.$log.debug('token created!', res);
+                            resolve(res);
+                        }, (err) => {
+                            // TODO: Toast this
+                            reject('error creating token', err);
+                        });
+                    }
+                });
+            });
+        }
+
+        createAnalysisMapToken(params) {
+            return this.analysisMapToken.create(params).$promise;
+        }
+
+        getAnalysisMapTokens() {
+            return this.analysisMapToken.get().$promise;
+        }
+
+        findToken(tokens, params) {
+            if (params.project) {
+                return tokens.results.find(t => t.project === params.project);
+            } else if (params.toolRun) {
+                // TODO swithc this to t.analysis once the backend is updated
+                return tokens.results.find(t => t.toolRun === params.toolRun);
+            }
+            return null;
+        }
+
+        getOrCreateAnalysisMapToken(params) {
             let deferred = this.$q.defer();
-            this.queryMapTokens({project: project.id}).then((response) => {
-                let token = response.results.find((el) => el.name === project.name);
+            this.getAnalysisMapTokens().then((res) => {
+                let token = this.findToken(res, params);
                 if (token) {
                     deferred.resolve(token);
                 } else {
-                    this.createMapToken({
-                        name: project.name,
-                        project: project.id,
-                        organizationId: project.organizationId
-                    }).then((res) => {
-                        // TODO: Toast this
-                        this.$log.debug('token created!', res);
-                        deferred.resolve(res);
-                    }, (err) => {
-                        // TODO: Toast this
-                        deferred.reject('error creating token', err);
+                    this.createAnalysisMapToken(params).then((response) => {
+                        this.$log.debug('token created!', response);
+                        deferred.resolve(response);
+                    }, (error) => {
+                        deferred.reject('error creating token', error);
                     });
                 }
             });

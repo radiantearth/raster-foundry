@@ -1,9 +1,20 @@
-const shared = angular.module('sevices', []);
+const shared = angular.module('services', []);
+
+// analyses
+require('./analysis/analysis.service')(shared);
+require('./analysis/labUtils.service')(shared);
+require('./analysis/reclassify.service')(shared);
+require('./analysis/histogram.service')(shared);
+require('./tools/toolTag.service')(shared);
 
 // auth
 require('./auth/auth.service')(shared);
 require('./auth/token.service')(shared);
 require('./auth/user.service')(shared);
+require('./auth/platform.service.js')(shared);
+require('./auth/organization.service.js')(shared);
+require('./auth/team.service.js')(shared);
+require('./auth/permissions.service.js')(shared);
 
 // settings
 require('./settings/config.provider')(shared);
@@ -22,7 +33,9 @@ require('./vendor/aws-sdk-s3.module.js');
 
 // projects
 require('./projects/colorCorrect.service')(shared);
+require('./projects/colorScheme.service')(shared);
 require('./projects/project.service')(shared);
+require('./projects/edit.service')(shared);
 require('./projects/histogram.service')(shared);
 require('./projects/aoi.service')(shared);
 require('./projects/export.service')(shared);
@@ -34,12 +47,10 @@ require('./projects/aoi.service')(shared);
 require('./scenes/scene.service')(shared);
 require('./scenes/upload.service')(shared);
 require('./scenes/datasource.service')(shared);
-
-// tools
-require('./tools/tool.service')(shared);
-require('./tools/toolCategory.service')(shared);
-require('./tools/toolTag.service')(shared);
-require('./tools/labUtils.service')(shared);
+require('./scenes/rasterFoundryRepository.service')(shared);
+require('./scenes/planetRepository.service')(shared);
+require('./scenes/cmrRepository.service')(shared);
+require('./scenes/datasourceLicense.service')(shared);
 
 // map
 require('./map/map.service')(shared);
@@ -49,10 +60,18 @@ require('./map/imageOverlay.service')(shared);
 require('./map/layer.service')(shared);
 require('./map/geocode.service')(shared);
 
+// vectors
+require('./vectors/shapes.service.js')(shared);
+
 // common
 require('./common/mousetip.service')(shared);
 require('./common/feed.service')(shared);
 require('./common/thumbnail.service')(shared);
+require('./common/decimal.filter')(shared);
+require('./common/modal.service')(shared);
+require('./common/url.filter')(shared);
+require('./common/orgStatus.filter')(shared);
+require('./common/pagination.service')(shared);
 
 
 export default shared;

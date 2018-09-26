@@ -1,11 +1,11 @@
 package com.azavea.rf.api.healthcheck
 
 import com.azavea.rf.api.Codec._
-import com.azavea.rf.database.Database
-import com.azavea.rf.database.tables.Users
-import io.circe.generic.JsonCodec
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import doobie._
+import doobie.implicits._
+
+import io.circe.generic.JsonCodec
 
 /**
   * Available healthcheck values
@@ -15,7 +15,7 @@ object HealthCheckStatus extends Enumeration {
   val OK, Failing = Value
 
   def fromString(str: String): Status = str match {
-    case "OK" => OK
+    case "OK"      => OK
     case "Failing" => Failing
   }
 }
@@ -28,7 +28,8 @@ object HealthCheckStatus extends Enumeration {
   *
   */
 @JsonCodec
-case class HealthCheck(status: HealthCheckStatus.Status, services: Seq[ServiceCheck])
+final case class HealthCheck(status: HealthCheckStatus.Status,
+                             services: Seq[ServiceCheck])
 
 /**
   * Individual service check for a component (database, cache, etc.)
@@ -37,29 +38,25 @@ case class HealthCheck(status: HealthCheckStatus.Status, services: Seq[ServiceCh
   * @param status  status of service (e.g. OK, UNHEALTHY)
   */
 @JsonCodec
-case class ServiceCheck(service: String, status: HealthCheckStatus.Status)
+final case class ServiceCheck(service: String, status: HealthCheckStatus.Status)
 
 /**
   * Exception for database errors
   *
   * @param description description of error
   */
-case class DatabaseException(description:String) extends Exception
+final case class DatabaseException(description: String) extends Exception
 
 object HealthCheckService {
 
   /**
     * Perform healthcheck by verifying at least the following:
-    *   - database is up and users can be queried
+    *   - database is up and can make a select query
     *
     */
-  def healthCheck()(implicit database: Database) = {
-    import database.driver.api._
-
-    val countAction = Users.take(1).length.result
-    database.db.run {
-      countAction
-    } map {
+  def healthCheck(): ConnectionIO[HealthCheck] = {
+    val query = sql"SELECT 1".query[Int].unique
+    query.map {
       case count: Int if count > 0 =>
         HealthCheck(
           HealthCheckStatus.OK,

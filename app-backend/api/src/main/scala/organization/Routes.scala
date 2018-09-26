@@ -1,76 +1,94 @@
 package com.azavea.rf.api.organization
 
-import com.azavea.rf.common.{Authentication, UserErrorHandler, CommonHandlers}
-import com.azavea.rf.database.Database
-import com.azavea.rf.database.tables.Organizations
+import com.azavea.rf.authentication.Authentication
+import com.azavea.rf.common.{CommonHandlers, UserErrorHandler}
+import com.azavea.rf.database.OrganizationDao
+import com.azavea.rf.database.filter.Filterables._
 import com.azavea.rf.datamodel._
-
+import com.azavea.rf.api.utils.Config
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.model.StatusCodes
 import com.lonelyplanet.akka.http.extensions.PaginationDirectives
 import io.circe._
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
-
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import java.util.UUID
 
+import cats.effect.IO
 
-/**
-  * Routes for Organizations
-  */
-trait OrganizationRoutes extends Authentication
+import doobie.util.transactor.Transactor
+import cats.implicits._
+import doobie._
+import doobie.implicits._
+import doobie.Fragments.in
+import doobie.postgres._
+import doobie.postgres.implicits._
+
+trait OrganizationRoutes
+    extends Authentication
+    with Config
     with PaginationDirectives
     with CommonHandlers
-    with UserErrorHandler {
+    with UserErrorHandler
+    with OrganizationQueryParameterDirective {
 
-  implicit def database: Database
+  val xa: Transactor[IO]
 
   val organizationRoutes: Route = handleExceptions(userExceptionHandler) {
-    pathEndOrSingleSlash {
-      get { listOrganizations } ~
-      post { createOrganization }
-    } ~
     pathPrefix(JavaUUID) { orgId =>
       pathEndOrSingleSlash {
-        get { getOrganization(orgId) } ~
-        put { updateOrganization(orgId) }
-      }
-    }
-  }
-
-  def listOrganizations: Route = authenticate { user =>
-    withPagination { page =>
-      if (user.isInRootOrganization) {
-        complete(Organizations.listOrganizations(page))
-      } else {
-        complete(Organizations.listFilteredOrganizations(List(user.organizationId), page))
-      }
-    }
-  }
-
-  def createOrganization: Route = authenticateRootMember { root =>
-    entity(as[Organization.Create]) { newOrg =>
-      onSuccess(Organizations.createOrganization(newOrg)) { org =>
-        complete(StatusCodes.Created, org)
+        get { getOrganization(orgId) }
+      } ~
+        pathPrefix("logo") {
+          pathEndOrSingleSlash {
+            post { addOrganizationLogo(orgId) }
+          }
+        }
+    } ~ pathPrefix("search") {
+      pathEndOrSingleSlash {
+        get { searchOrganizations() }
       }
     }
   }
 
   def getOrganization(orgId: UUID): Route = authenticate { user =>
     rejectEmptyResponse {
-      if (user.isInRootOrSameOrganizationAs(new { val organizationId = orgId })) {
-        complete(Organizations.getOrganization(orgId))
-      } else {
-        complete(StatusCodes.NotFound)
+      complete {
+        OrganizationDao
+          .viewFilter(user)
+          .filter(orgId)
+          .selectOption
+          .transact(xa)
+          .unsafeToFuture()
       }
     }
   }
 
-  def updateOrganization(orgId: UUID): Route = authenticateRootMember { root =>
-    entity(as[Organization]) { updatedOrg =>
-      onSuccess(Organizations.updateOrganization(updatedOrg, orgId)) {
-        completeSingleOrNotFound
+  def searchOrganizations(): Route = authenticate { user =>
+    searchParams { (searchParams) =>
+      complete {
+        OrganizationDao
+          .searchOrganizations(user, searchParams)
+          .transact(xa)
+          .unsafeToFuture
       }
     }
   }
 
+  def addOrganizationLogo(orgID: UUID): Route = authenticate { user =>
+    authorizeAsync(
+      OrganizationDao.userIsAdmin(user, orgID).transact(xa).unsafeToFuture()
+    ) {
+      entity(as[String]) { logoBase64 =>
+        onSuccess(
+          OrganizationDao
+            .addLogo(logoBase64, orgID, dataBucket)
+            .transact(xa)
+            .unsafeToFuture()) { organization =>
+          complete((StatusCodes.Created, organization))
+        }
+      }
+    }
+  }
+
+  // @TODO: There is no delete functionality as we most likely will want to instead deactivate organizations
 }

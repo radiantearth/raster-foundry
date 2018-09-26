@@ -1,35 +1,31 @@
+/* global BUILDCONFIG HELPCONFIG */
+
 class HomeController {
-    constructor(authService, $uibModal, feedService) {
+    constructor(authService, modalService, feedService) {
         'ngInject';
         this.authService = authService;
-        this.$uibModal = $uibModal;
+        this.modalService = modalService;
         this.feedService = feedService;
     }
 
     $onInit() {
+        this.BUILDCONFIG = BUILDCONFIG;
+        this.HELPCONFIG = HELPCONFIG;
         this.feedService.getPosts().then(posts => {
             this.blogPosts = posts;
         });
     }
 
-    $onDestroy() {
-
-    }
-
     openCreateProjectModal() {
-        if (this.activeModal) {
-            this.activeModal.dismiss();
-        }
-
-        this.activeModal = this.$uibModal.open({
+        this.modalService.open({
             component: 'rfProjectCreateModal'
         });
+    }
 
-        this.activeModal.result.then(() => {
-
+    openTemplateCreateModal() {
+        this.modalService.open({
+            component: 'rfTemplateCreateModal'
         });
-
-        return this.activeModal;
     }
 }
 

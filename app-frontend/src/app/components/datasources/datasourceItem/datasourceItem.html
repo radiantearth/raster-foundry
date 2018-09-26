@@ -1,26 +1,40 @@
 <div class="list-group-item">
   <div class="list-group-overflow">
-    <strong class="color-dark">{{$ctrl.datasource.name}}</strong><br>
-    Modified on {{$ctrl.datasource.modifiedAt | date}}
+    <div class="list-group-left">
+      <div><strong class="color-dark">{{$ctrl.datasource.name}}</strong></div>
+      <div>
+        <div class="visibility"
+             ng-if="$ctrl.isOwner"
+             ng-class="{'private': !$ctrl.isShared, 'sharing': $ctrl.isShared}">
+          {{$ctrl.isShared ? 'Sharing' : 'Private'}}
+        </div>
+        <div class="visibility"
+             ng-if="!$ctrl.isOwner"
+             ng-class="{'global': $ctrl.isGlobal, 'shared': !$ctrl.isGlobal}">
+          {{$ctrl.isGlobal ? 'global' : 'shared'}}
+        </div>
+        Modified on {{$ctrl.datasource.modifiedAt | date}}
+      </div>
+    </div>
   </div>
   <div class="list-group-right">
-
-    <button class="btn btn-square"
-            ng-click="$ctrl.toggleSelected($event)"
-            ng-if="$ctrl.isSelectable"
-            ng-class="{'btn-secondary': $ctrl.selectedStatus}">
-      <i ng-class="{
-                   'icon-plus': !$ctrl.selectedStatus,
-                   'icon-cross': $ctrl.selectedStatus,
-                   'icon-check': $ctrl.selectedStatus === 'added'
-                   }">
-      </i>
-    </button>
-    <a class="btn btn-square"
-       ui-sref="imports.datasources.detail({ datasourceid: $ctrl.datasource.id })"
-       ui-sref-opts="{inherit: false}"
-       ng-if="!$ctrl.isSelectable">
-      View
-    </a>
+    <div class="btn-group">
+      <a class="btn btn-small"
+         ui-sref="imports.datasources.detail({ datasourceid: $ctrl.datasource.id })"
+         ui-sref-opts="{inherit: false}"
+         ng-if="!$ctrl.isSelectable">
+         <span class="sr-only">View</span>
+         <i class="icon-eye"></i>
+      </a>
+      <button
+        type="button"
+        class="btn btn-small btn-danger"
+        ng-click="$ctrl.onOpenDatasourceDeleteModal()"
+        ng-if="$ctrl.isOwner && !$ctrl.isShared"
+        uib-tooltip="After today restriction">
+        <span class="sr-only">Delete</span>
+        <i class="icon-trash"></i>
+      </button>
+    </div>
   </div>
 </div>

@@ -1,0 +1,15 @@
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>[%thread] %-5level - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="geotrellis.vector.io" level="info" additivity="false">
+    <appender-ref ref="STDOUT" />
+  </logger>
+
+  <root level="debug">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

@@ -1,9 +1,10 @@
-const Map = require('es6-map');
+import {Map} from 'immutable';
 
 export default class ProjectsAdvancedColorController {
     constructor( // eslint-disable-line max-params
         $log, $scope, $q, projectService, layerService, sceneService, $state, mapService,
-        datasourceService, mapUtilsService, colorCorrectService
+        datasourceService, mapUtilsService, colorCorrectService, projectEditService,
+        RasterFoundryRepository
     ) {
         'ngInject';
         this.projectService = projectService;
@@ -12,11 +13,16 @@ export default class ProjectsAdvancedColorController {
         this.datasourceService = datasourceService;
         this.mapUtilsService = mapUtilsService;
         this.colorCorrectService = colorCorrectService;
+        this.projectEditService = projectEditService;
         this.$state = $state;
         this.$scope = $scope;
         this.$parent = $scope.$parent.$ctrl;
         this.$q = $q;
         this.$log = $log;
+        this.repository = {
+            name: 'Raster Foundry',
+            service: RasterFoundryRepository
+        };
         this.getMap = () => mapService.getMap('edit');
     }
 
@@ -134,7 +140,7 @@ export default class ProjectsAdvancedColorController {
             this.projectService.getAllProjectScenes({
                 projectId: this.project.id,
                 bbox: this.filterBboxList.map(r => r.toBBoxString()).join(';')
-            }).then((selectedScenes) => {
+            }).then(({scenes: selectedScenes}) => {
                 if (this.lastRequest === requestTime) {
                     this.selectNoScenes();
                     selectedScenes.map((scene) => this.setSelected(scene, true));
@@ -160,14 +166,16 @@ export default class ProjectsAdvancedColorController {
 
     setSelected(scene, selected) {
         if (selected) {
-            this.selectedScenes.set(scene.id, scene);
-            this.selectedLayers.set(scene.id, this.$parent.sceneLayers.get(scene.id));
+            this.selectedScenes = this.selectedScenes.set(scene.id, scene);
+            this.selectedLayers = this.selectedLayers.set(
+                scene.id, this.layerService.layerFromScene(scene, this.$parent.projectId)
+            );
             this.getMap().then((map) => {
                 map.setGeojson(scene.id, this.sceneService.getStyledFootprint(scene));
             });
         } else {
-            this.selectedScenes.delete(scene.id);
-            this.selectedLayers.delete(scene.id);
+            this.selectedScenes = this.selectedScenes.delete(scene.id);
+            this.selectedLayers = this.selectedLayers.delete(scene.id);
             this.getMap().then((map) => {
                 map.deleteGeojson(scene.id);
             });
@@ -216,7 +224,7 @@ export default class ProjectsAdvancedColorController {
 
         if (newCorrection) {
             const promise = this.colorCorrectService.bulkUpdate(
-                this.projectService.currentProject.id,
+                this.projectEditService.currentProject.id,
                 sceneIds,
                 newCorrection
             );
@@ -229,7 +237,7 @@ export default class ProjectsAdvancedColorController {
     resetCorrection() {
         const sceneIds = Array.from(this.selectedScenes.keys());
         const promise = this.colorCorrectService.bulkUpdate(
-            this.projectService.currentProject.id,
+            this.projectEditService.currentProject.id,
             sceneIds
         );
         const defaultCorrection = this.colorCorrectService.getDefaultColorCorrection();

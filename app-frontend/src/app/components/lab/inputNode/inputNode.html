@@ -1,0 +1,37 @@
+<div class="input-node-item">
+  <div class="input-node-label">Project</div>
+  <div class="input-data form-group all-in-one no-margin">
+    <div class="flex-fill input-node-input-label">
+      <span ng-show="!$ctrl.selectedProject">Select a Project</span>
+      {{$ctrl.selectedProject.name | limitTo : 18}}
+      <span ng-show="$ctrl.selectedProject.name.length > 18">...</span>
+    </div>
+    <button type="button" class="btn btn-flat" ng-click="$ctrl.selectProjectModal()">Change</button>
+  </div>
+</div>
+<div class="input-node-item">
+  <div class="input-node-label">Band</div>
+  <div class="input-data form-group no-margin">
+    <rf-band-select selected-band="$ctrl.selectedBand"
+                    bands="$ctrl.bands"
+                    on-band-select="$ctrl.onBandChange(index)"
+                    disabled="!$ctrl.selectedProject"
+                    ng-if="!$ctrl.selectedProject || $ctrl.bands.length">
+    </rf-band-select>
+    <div ng-if="!$ctrl.bands.length && $ctrl.fetchingDatasources">
+      Loading band data
+    </div>
+    <div ng-if="$ctrl.selectedProject && !$ctrl.bands.length && !$ctrl.fetchingDatasources"
+         class="form-group search-form">
+      <input class="form-control" type="number" min="0"
+             placeholder="Enter a 0 indexed band"
+             ng-model="$ctrl.manualBand"
+             ng-model-options="{updateOn: 'default', debounce: 500, allowInvalid: true}"
+             ng-change="$ctrl.onBandChange($ctrl.manualBand)">
+      <button disabled title="The datasources on this project do not have bands defined"
+              class="btn-link">
+        <i class="icon-help"></i>
+      </button>
+    </div>
+  </div>
+</div>
